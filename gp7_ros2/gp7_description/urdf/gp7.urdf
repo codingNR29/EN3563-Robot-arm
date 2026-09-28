@@ -3,6 +3,15 @@
   <material name="yaskawa_blue">
     <color rgba="0.129 0.149 0.749 1.0" />
   </material>
+
+  <!-- World anchor: fixes the robot base to the Gazebo ground plane -->
+  <link name="world"/>
+  <joint name="world_to_base" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
   <link name="base_link">
     <visual>
       <geometry>
@@ -394,7 +403,7 @@
   </joint>
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters>$(find gp7_gazebo)/config/ros2_controllers.yaml</parameters>
+      <parameters>/home/banula/ros2_ws/install/gp7_gazebo/share/gp7_gazebo/config/ros2_controllers.yaml</parameters>
     </plugin>
   </gazebo>
   <ros2_control name="GazeboSystem" type="system">
@@ -431,32 +440,11 @@
       <state_interface name="position" />
       <state_interface name="velocity" />
     </joint>
+    <!-- gripper_controller is the sole actuated gripper joint.
+         The remaining gripper joints are mimic joints — Gazebo Sim does not
+         create command interfaces for mimic joints, so they must NOT appear
+         in the ros2_control section or controller activation will fail. -->
     <joint name="gripper_controller">
-      <command_interface name="position" />
-      <state_interface name="position" />
-      <state_interface name="velocity" />
-    </joint>
-    <joint name="gripper_base_to_gripper_left2">
-      <command_interface name="position" />
-      <state_interface name="position" />
-      <state_interface name="velocity" />
-    </joint>
-    <joint name="gripper_left3_to_gripper_left1">
-      <command_interface name="position" />
-      <state_interface name="position" />
-      <state_interface name="velocity" />
-    </joint>
-    <joint name="gripper_base_to_gripper_right3">
-      <command_interface name="position" />
-      <state_interface name="position" />
-      <state_interface name="velocity" />
-    </joint>
-    <joint name="gripper_base_to_gripper_right2">
-      <command_interface name="position" />
-      <state_interface name="position" />
-      <state_interface name="velocity" />
-    </joint>
-    <joint name="gripper_right3_to_gripper_right1">
       <command_interface name="position" />
       <state_interface name="position" />
       <state_interface name="velocity" />

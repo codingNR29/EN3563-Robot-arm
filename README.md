@@ -205,6 +205,72 @@ ros2 launch gp7_gazebo gazebo.launch.py
 
 ---
 
+## 🕹️ Controlling the Robot via Code (`gp7_ros2_pkg`)
+
+Three Python ROS 2 nodes live in `gp7_ros2_pkg/scripts/`:
+
+| Node | Executable | Purpose |
+| :--- | :--- | :--- |
+| `arm_controller_node.py` | `arm_controller_node` | Sends `JointTrajectory` action goals to `arm_controller`. Subscribes to `/gp7/goal_index` |
+| `gripper_controller_node.py` | `gripper_controller_node` | Forwards a single float to all 6 gripper joints. Subscribes to `/gp7/gripper_cmd` |
+| `demo_sequence_node.py` | `demo_sequence_node` | Runs a full automated demo on startup (no manual input needed) |
+
+### Option A — All-in-one launch (recommended)
+
+```bash
+# Launches Gazebo + both controller nodes in one command
+ros2 launch gp7_ros2_pkg gp7_sim_control.launch.py
+```
+
+Then in a **second terminal**:
+
+```bash
+source ~/ros2_ws/install/setup.bash
+
+# Move the arm to a preset position (0=home, 1=reach_out, 2=compact, 3=wave)
+ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 1}" --once
+
+# Control the gripper (-0.5 = close, 0.0 = neutral, 0.15 = open)
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: -0.5}" --once
+```
+
+### Option B — Gazebo first, then nodes separately
+
+```bash
+# Terminal 1: Gazebo
+ros2 launch gp7_gazebo gazebo.launch.py
+
+# Terminal 2: Arm controller node
+ros2 run gp7_ros2_pkg arm_controller_node
+
+# Terminal 3: Gripper controller node
+ros2 run gp7_ros2_pkg gripper_controller_node
+
+# Terminal 4: Send commands
+ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 2}" --once
+```
+
+### Option C — Automated demo (no manual commands)
+
+```bash
+# Terminal 1: Gazebo
+ros2 launch gp7_gazebo gazebo.launch.py
+
+# Terminal 2: Demo sequence (auto-runs home → reach → gripper → home)
+ros2 run gp7_ros2_pkg demo_sequence_node
+```
+
+### Arm Preset Positions
+
+| Index | Name | Description |
+| :---: | :--- | :--- |
+| `0` | home | All joints at 0 rad |
+| `1` | reach_out | Arm raised and extended forward |
+| `2` | compact | Folded park/transport pose |
+| `3` | wave | Base swings left and right |
+
+---
+
 ## 🦾 Robot Kinematics & Controllers
 
 ### Robot Arm Joints (6-DOF)
