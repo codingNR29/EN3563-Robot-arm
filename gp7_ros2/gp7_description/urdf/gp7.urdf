@@ -404,6 +404,10 @@
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>/home/banula/ros2_ws/install/gp7_gazebo/share/gp7_gazebo/config/ros2_controllers.yaml</parameters>
+      <ros>
+        <!-- Tell controller_manager to use /clock from Gazebo sim instead of wall clock -->
+        <parameter name="use_sim_time" type="bool">true</parameter>
+      </ros>
     </plugin>
   </gazebo>
   <ros2_control name="GazeboSystem" type="system">

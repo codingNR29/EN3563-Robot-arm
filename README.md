@@ -1,6 +1,6 @@
-# Yaskawa Motoman GP7 Robot Arm - ROS 2 Project
+# Yaskawa Motoman GP7 Robot Arm — ROS 2 Project
 
-Welcome to the **Yaskawa Motoman GP7 Robot Arm** ROS 2 repository! This project provides complete ROS 2 integration for the 6-axis Yaskawa Motoman GP7 industrial robotic arm equipped with an adaptive 2-finger gripper. It includes URDF/Xacro kinematic models, mesh representations, RViz2 visualization pipelines, and Gazebo Sim integration powered by `ros2_control`.
+Welcome to the **Yaskawa Motoman GP7 Robot Arm** ROS 2 repository! This project provides complete ROS 2 integration for the 6-axis Yaskawa Motoman GP7 industrial robotic arm equipped with an adaptive 2-finger gripper. It includes URDF kinematic models, mesh representations, RViz2 visualization, Gazebo Sim physics simulation powered by `gz_ros2_control`, and Python controller nodes for commanding the robot via code.
 
 ---
 
@@ -13,6 +13,8 @@ Welcome to the **Yaskawa Motoman GP7 Robot Arm** ROS 2 repository! This project 
 - [How to Run the Project](#-how-to-run-the-project)
   - [1. Visualizing in RViz2](#1-visualizing-in-rviz2)
   - [2. Simulating in Gazebo Sim](#2-simulating-in-gazebo-sim)
+  - [3. Controlling the Robot via Code](#3-controlling-the-robot-via-code)
+- [Adding Your Own Movements](#-adding-your-own-movements)
 - [Robot Kinematics & Controllers](#-robot-kinematics--controllers)
 - [Troubleshooting & Common Issues](#-troubleshooting--common-issues)
 - [License](#-license)
@@ -21,121 +23,88 @@ Welcome to the **Yaskawa Motoman GP7 Robot Arm** ROS 2 repository! This project 
 
 ## 🤖 Overview
 
-The **Motoman GP7** is a high-speed 6-axis industrial robot arm designed for assembly, handling, and pick-and-place operations. This repository packages the robot model into ROS 2 format for testing, trajectory planning, visualization, and simulation.
+The **Motoman GP7** is a high-speed 6-axis industrial robot arm designed for assembly, handling, and pick-and-place operations. This repository packages the robot model into ROS 2 format for trajectory planning, visualization, and simulation.
 
-Key features included in this workspace:
-- 🎨 **Detailed URDF & 3D Meshes**: High-resolution visual (`.dae`, `.stl`) and collision geometries for both the GP7 arm and its adaptive gripper.
-- 🎛️ **RViz2 Integration**: Joint GUI control for testing kinematics and inspecting joint limits interactively.
-- 🌐 **Gazebo Simulation**: Ignition / Gazebo Sim integration with `gz_ros2_control` for physics-based simulation.
-- 🕹️ **ROS 2 Control & Controllers**: Configured joint trajectory controller (`JointTrajectoryController`) for arm movements and position controller (`JointGroupPositionController`) for the gripper.
+Key features:
+- 🎨 **Detailed URDF & 3D Meshes** — High-resolution visual (`.stl`) and collision geometries for the GP7 arm and adaptive gripper.
+- 🎛️ **RViz2 Integration** — Joint GUI slider control for testing kinematics interactively.
+- 🌐 **Gazebo Sim** — Physics-based simulation with `gz_ros2_control`; robot is ground-anchored via a fixed world joint.
+- 🕹️ **Python Controller Nodes** — `arm_controller_node`, `gripper_controller_node`, and `demo_sequence_node` for commanding the robot programmatically.
+- ✅ **Working Controller Stack** — `joint_state_broadcaster` → `arm_controller` (JointTrajectoryController) → `gripper_controller` (JointGroupPositionController), all verified active.
 
 ---
 
 ## 📂 Directory & Folder Structure
 
-Here is a breakdown of what each folder in this repository contains and its purpose:
-
 ```text
-EN3563-Robot-arm/
-└── gp7_ros2/                      # Meta-folder containing all ROS 2 packages
-    ├── gp7_description/           # Robot Model & Visualization Package
-    │   ├── launch/                # Launch files (e.g., display.launch.py)
-    │   ├── meshes/                # 3D Mesh files (STL/DAE for arm and gripper)
-    │   ├── rviz/                  # RViz configuration profiles (display.rviz)
-    │   ├── urdf/                  # Unified Robot Description Format (gp7.urdf)
-    │   └── CMakeLists.txt / package.xml
+ros2_ws/src/
+└── gp7_ros2/
+    ├── gp7_description/           # Robot model & visualization
+    │   ├── launch/                # display.launch.py (RViz2)
+    │   ├── meshes/                # STL mesh files (arm + gripper)
+    │   ├── rviz/                  # RViz2 config (display.rviz)
+    │   └── urdf/gp7.urdf          # Full robot URDF (with ros2_control + world joint)
     │
-    ├── gp7_gazebo/                # Physics Simulation Package
-    │   ├── config/                # ros2_control YAML configuration (ros2_controllers.yaml)
-    │   ├── launch/                # Simulation launch files (gazebo.launch.py)
-    │   └── CMakeLists.txt / package.xml
+    ├── gp7_gazebo/                # Gazebo simulation package
+    │   ├── config/
+    │   │   └── ros2_controllers.yaml   # Controller types and joint mappings
+    │   └── launch/
+    │       └── gazebo.launch.py        # Main sim launch (spawns robot + controllers)
     │
-    ├── gp7_ros2_pkg/              # Core Meta/Wrapper Package
-    │   └── CMakeLists.txt / package.xml
-    │
-    ├── gp7_bringup/               # Workspace directory for system bringup launch files
-    ├── gp7_moveit_config/         # Reserved package for MoveIt 2 motion planning setup
-    └── gp7_system_tests/          # Reserved package for automated system & integration tests
+    └── gp7_ros2_pkg/              # Python controller nodes package
+        ├── scripts/
+        │   ├── arm_controller_node.py       # Trajectory action client
+        │   ├── gripper_controller_node.py   # Gripper position forwarder
+        │   └── demo_sequence_node.py        # Automated demo sequence
+        └── launch/
+            └── gp7_sim_control.launch.py    # All-in-one launch (Gazebo + nodes)
 ```
-
-### Detailed Package Descriptions:
-
-1. **`gp7_description`**:
-   Contains everything related to the physical and visual representation of the Motoman GP7 robot arm and its adaptive 2-finger gripper.
-   - `urdf/gp7.urdf`: Defines link dimensions, inertial properties, joint axes, limits, and visual/collision mesh references.
-   - `meshes/`: Stores visual `.stl` and `.dae` mesh files for the GP7 links and adaptive gripper components.
-   - `launch/display.launch.py`: Launches `robot_state_publisher`, `joint_state_publisher_gui`, and `rviz2`.
-
-2. **`gp7_gazebo`**:
-   Contains configuration and launch scripts required to spawn and simulate the robot inside Gazebo Sim.
-   - `config/ros2_controllers.yaml`: Defines `controller_manager` update rates and controller configurations (`arm_controller`, `gripper_controller`, and `joint_state_broadcaster`).
-   - `launch/gazebo.launch.py`: Launches Gazebo Sim (`ros_gz_sim`), sets environment paths, spawns the robot model, and auto-spawns ROS 2 controllers.
-
-3. **`gp7_ros2_pkg`**:
-   Acts as the primary package interface uniting robot dependencies across the repository.
-
-4. **`gp7_bringup`**, **`gp7_moveit_config`**, **`gp7_system_tests`**:
-   Modular ROS 2 package spaces dedicated for multi-node bringup scripts, MoveIt 2 kinematic solver configs, and test suites.
 
 ---
 
 ## 🛠️ Prerequisites
 
-Before getting started, make sure your computer meets the following system requirements:
-
-- **Operating System**: Ubuntu 22.04 LTS (recommended) or Ubuntu 24.04 LTS
-- **ROS 2 Distribution**: ROS 2 Humble Hawksbill (or ROS 2 Jazzy / Rolling)
-- **Gazebo**: Gazebo Sim (formerly Ignition Gazebo, Fortress or Harmonic)
-- **Build Tools**: `colcon`, `rosdep`, `git`, `python3-pip`
+| Requirement | Version |
+| :--- | :--- |
+| Operating System | Ubuntu 24.04 LTS |
+| ROS 2 Distribution | **ROS 2 Jazzy** |
+| Gazebo | Gazebo Sim 8 (Harmonic) via `ros-jazzy-ros-gz` |
+| Build Tools | `colcon`, `rosdep`, `git` |
 
 ---
 
 ## ⚙️ Step-by-Step Installation & Setup
 
-If you are setting up this repository on a fresh PC, follow these instructions step-by-step in your terminal:
+### Step 1: Install ROS 2 Jazzy & Required Packages
 
-### Step 1: Install ROS 2 & Dependencies
-
-Ensure ROS 2 Desktop is installed on your system. If not, follow the official [ROS 2 Installation Guide](https://docs.ros.org/en/humble/Installation.html).
-
-Next, install the required ROS 2 control, Gazebo, and GUI tools:
+Follow the [official ROS 2 Jazzy installation guide](https://docs.ros.org/en/jazzy/Installation.html), then install the required packages:
 
 ```bash
-sudo apt update
-sudo apt install -y \
-  ros-humble-desktop \
-  ros-humble-ros2-control \
-  ros-humble-ros2-controllers \
-  ros-humble-ros-gz \
-  ros-humble-gz-ros2-control \
-  ros-humble-joint-state-publisher-gui \
-  ros-humble-xacro \
+sudo apt update && sudo apt install -y \
+  ros-jazzy-desktop \
+  ros-jazzy-ros2-control \
+  ros-jazzy-ros2-controllers \
+  ros-jazzy-ros-gz \
+  ros-jazzy-gz-ros2-control \
+  ros-jazzy-joint-state-publisher-gui \
   python3-colcon-common-extensions \
   python3-rosdep
 ```
 
-*(Note: Replace `humble` with `jazzy` if using ROS 2 Jazzy).*
-
-### Step 2: Create a ROS 2 Workspace
-
-Create a new directory structure for your ROS 2 workspace:
+### Step 2: Create ROS 2 Workspace
 
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
 ```
 
-### Step 3: Clone this Repository
-
-Clone the project repository into the `src/` directory of your ROS 2 workspace:
+### Step 3: Clone the Repository
 
 ```bash
 git clone https://github.com/codingNR29/EN3563-Robot-arm.git .
 ```
 
-### Step 4: Install ROS Dependencies via `rosdep`
-
-Initialize and update `rosdep` to automatically install any missing dependencies:
+### Step 4: Install Dependencies
 
 ```bash
 cd ~/ros2_ws
@@ -146,8 +115,6 @@ rosdep install --from-paths src --ignore-src -r -y
 
 ### Step 5: Build the Workspace
 
-Build the packages using `colcon`:
-
 ```bash
 cd ~/ros2_ws
 colcon build --symlink-install
@@ -155,13 +122,11 @@ colcon build --symlink-install
 
 ### Step 6: Source the Environment
 
-Before running any ROS 2 nodes, source your workspace setup file:
-
 ```bash
 source ~/ros2_ws/install/setup.bash
 ```
 
-> 💡 **Pro-Tip**: You can add this line to your `~/.bashrc` so it sources automatically whenever you open a new terminal:
+> 💡 **Pro-tip**: Add this to your `~/.bashrc` so it runs automatically in every new terminal:
 > ```bash
 > echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
 > source ~/.bashrc
@@ -173,107 +138,169 @@ source ~/ros2_ws/install/setup.bash
 
 ### 1. Visualizing in RViz2
 
-To test the robot URDF model and interactively move its joints using a slider GUI:
+Interactively drag joint sliders to explore the robot's range of motion:
 
 ```bash
 ros2 launch gp7_description display.launch.py
 ```
 
-**What this command does:**
-- Starts `robot_state_publisher` to publish the robot's transforms (`tf`).
-- Opens a **Joint State Publisher GUI** window allowing you to adjust joint angles for Joints 1–6 and the gripper.
-- Opens **RViz2** displaying the Motoman GP7 3D model.
+Opens `robot_state_publisher` + Joint State Publisher GUI + RViz2.
 
 ---
 
 ### 2. Simulating in Gazebo Sim
 
-To spawn the robot in a Gazebo Sim physics environment with ROS 2 hardware controllers enabled:
+Launch the full physics simulation with controllers:
 
 ```bash
 ros2 launch gp7_gazebo gazebo.launch.py
 ```
 
-**What this command does:**
-1. Launches Gazebo Sim with an empty world.
-2. Spawns the `motoman_gp7` robot model into the world.
-3. Automatically sets the `GZ_SIM_RESOURCE_PATH` environment variable so Gazebo can locate 3D mesh files.
-4. Starts `controller_manager` and spawns the following controllers:
-   - `joint_state_broadcaster`
-   - `arm_controller` (Joint Trajectory Controller)
-   - `gripper_controller` (Position Controller)
+**What happens:**
+1. Gazebo Sim opens with an empty world.
+2. The GP7 robot spawns — **fixed to the ground** via a world anchor joint.
+3. After ~20 seconds, three controllers activate in sequence:
+   - ✅ `joint_state_broadcaster` → publishes `/joint_states`
+   - ✅ `arm_controller` → accepts trajectory goals
+   - ✅ `gripper_controller` → accepts gripper position commands
+
+> ⚠️ **Important**: Wait until you see all three `Activated ...` messages in the terminal before running controller nodes. If activation fails, see [Troubleshooting](#-troubleshooting--common-issues).
 
 ---
 
-## 🕹️ Controlling the Robot via Code (`gp7_ros2_pkg`)
+### 3. Controlling the Robot via Code
 
-Three Python ROS 2 nodes live in `gp7_ros2_pkg/scripts/`:
+#### Option A — Gazebo + Controller nodes separately (recommended for development)
 
-| Node | Executable | Purpose |
-| :--- | :--- | :--- |
-| `arm_controller_node.py` | `arm_controller_node` | Sends `JointTrajectory` action goals to `arm_controller`. Subscribes to `/gp7/goal_index` |
-| `gripper_controller_node.py` | `gripper_controller_node` | Forwards a single float to all 6 gripper joints. Subscribes to `/gp7/gripper_cmd` |
-| `demo_sequence_node.py` | `demo_sequence_node` | Runs a full automated demo on startup (no manual input needed) |
-
-### Option A — All-in-one launch (recommended)
-
+**Terminal 1** — Launch Gazebo, wait for all 3 controllers to activate:
 ```bash
-# Launches Gazebo + both controller nodes in one command
-ros2 launch gp7_ros2_pkg gp7_sim_control.launch.py
+ros2 launch gp7_gazebo gazebo.launch.py
 ```
 
-Then in a **second terminal**:
-
+**Terminal 2** — Run the arm controller node, wait for the ready message:
 ```bash
-source ~/ros2_ws/install/setup.bash
+ros2 run gp7_ros2_pkg arm_controller_node
+# Wait for: ✅ /joint_states received — arm controller is ready for goals.
+```
 
-# Move the arm to a preset position (0=home, 1=reach_out, 2=compact, 3=wave)
+**Terminal 3** — Send movement commands:
+```bash
+# Move to preset position (0=home, 1=reach_out, 2=compact, 3=wave)
 ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 1}" --once
+```
 
-# Control the gripper (-0.5 = close, 0.0 = neutral, 0.15 = open)
+**Terminal 4** — Control the gripper:
+```bash
+ros2 run gp7_ros2_pkg gripper_controller_node
+# Then in another terminal:
 ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: -0.5}" --once
 ```
 
-### Option B — Gazebo first, then nodes separately
+#### Option B — Automated demo (no manual input)
 
 ```bash
 # Terminal 1: Gazebo
 ros2 launch gp7_gazebo gazebo.launch.py
 
-# Terminal 2: Arm controller node
-ros2 run gp7_ros2_pkg arm_controller_node
-
-# Terminal 3: Gripper controller node
-ros2 run gp7_ros2_pkg gripper_controller_node
-
-# Terminal 4: Send commands
-ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 2}" --once
-```
-
-### Option C — Automated demo (no manual commands)
-
-```bash
-# Terminal 1: Gazebo
-ros2 launch gp7_gazebo gazebo.launch.py
-
-# Terminal 2: Demo sequence (auto-runs home → reach → gripper → home)
+# Terminal 2: Auto-demo (home → reach → gripper → compact → home)
 ros2 run gp7_ros2_pkg demo_sequence_node
 ```
 
-### Arm Preset Positions
+---
 
-| Index | Name | Description |
-| :---: | :--- | :--- |
-| `0` | home | All joints at 0 rad |
-| `1` | reach_out | Arm raised and extended forward |
-| `2` | compact | Folded park/transport pose |
-| `3` | wave | Base swings left and right |
+## 🧩 Adding Your Own Movements
+
+All arm presets live in `gp7_ros2_pkg/scripts/arm_controller_node.py`. You can add new motions in **two steps**.
+
+### Step 1 — Know your joint order and limits
+
+The arm has **6 joints**, always listed in this order:
+
+| # | Joint Name | Axis | Approx. Limit |
+| :-: | :--- | :--- | :--- |
+| 1 | `joint_1_s` | Base rotation | ±170° (~±2.97 rad) |
+| 2 | `joint_2_l` | Lower arm pitch | −65° to +155° |
+| 3 | `joint_3_u` | Upper arm pitch | −170° to +190° |
+| 4 | `joint_4_r` | Wrist roll | ±190° (~±3.32 rad) |
+| 5 | `joint_5_b` | Wrist pitch | ±135° (~±2.36 rad) |
+| 6 | `joint_6_t` | Tool roll | ±360° (~±6.28 rad) |
+
+All values are in **radians**.
+
+### Step 2 — Add a preset to `arm_controller_node.py`
+
+Open [`gp7_ros2_pkg/scripts/arm_controller_node.py`](file:///home/banula/ros2_ws/src/gp7_ros2/gp7_ros2_pkg/scripts/arm_controller_node.py) and find the `PRESETS` dictionary. Add a new entry:
+
+```python
+PRESETS = {
+    0: { 'name': 'home', 'waypoints': [([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 3.0)] },
+    1: { 'name': 'reach_out', ... },
+    2: { 'name': 'compact',   ... },
+    3: { 'name': 'wave',      ... },
+
+    # ✅ ADD YOUR OWN PRESET HERE:
+    4: {
+        'name': 'my_pose',
+        'waypoints': [
+            # ( [j1_s, j2_l, j3_u, j4_r, j5_b, j6_t], time_seconds )
+            ([0.0, 0.3, 0.5, 0.0, 0.0, 0.0], 2.0),   # intermediate
+            ([0.5, 0.8, 1.0, 0.3, 0.5, 0.0], 5.0),   # final pose
+        ],
+    },
+}
+```
+
+**Waypoints explained:**
+- Each waypoint is a `(positions, time)` tuple.
+- `positions` = list of 6 joint angles **in radians**, matching the joint order above.
+- `time` = seconds from trajectory start when this waypoint should be reached.
+- The controller computes a **smooth spline** between waypoints — no need to specify velocities.
+- Add as many intermediate waypoints as you need for a smooth, complex path.
+
+Then trigger it:
+```bash
+ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 4}" --once
+```
+
+> 💡 No rebuild needed — the node uses `--symlink-install` so edits to the script take effect immediately on next run.
+
+### Gripper Commands
+
+The gripper is controlled separately via a float value:
+
+```bash
+# Open gripper
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: 0.15}" --once
+
+# Close gripper
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: -0.5}" --once
+
+# Neutral
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: 0.0}" --once
+```
+
+### Sending raw trajectories directly (bypassing the node)
+
+You can also send a trajectory goal directly via the ROS 2 action CLI — useful for one-off testing without editing code:
+
+```bash
+ros2 action send_goal /arm_controller/follow_joint_trajectory \
+  control_msgs/action/FollowJointTrajectory \
+  "{trajectory: {
+      joint_names: [joint_1_s, joint_2_l, joint_3_u, joint_4_r, joint_5_b, joint_6_t],
+      points: [
+        {positions: [0.0, 0.5, 0.8, 0.0, 0.3, 0.0],
+         time_from_start: {sec: 3, nanosec: 0}}
+      ]
+  }}"
+```
 
 ---
 
 ## 🦾 Robot Kinematics & Controllers
 
-### Robot Arm Joints (6-DOF)
+### 6-DOF Arm Joints
+
 | Joint Name | Type | Description |
 | :--- | :--- | :--- |
 | `joint_1_s` | Revolute | Base Rotation (S-axis) |
@@ -283,37 +310,52 @@ ros2 run gp7_ros2_pkg demo_sequence_node
 | `joint_5_b` | Revolute | Wrist Pitch (B-axis) |
 | `joint_6_t` | Revolute | Tool Flange Roll (T-axis) |
 
-### Adaptive Gripper Joints
-- `gripper_controller`
-- `gripper_base_to_gripper_left2`
-- `gripper_left3_to_gripper_left1`
-- `gripper_base_to_gripper_right3`
-- `gripper_base_to_gripper_right2`
-- `gripper_right3_to_gripper_right1`
+### Adaptive Gripper
+
+The gripper has **one actuated joint** (`gripper_controller`) and **5 mimic joints** that follow it automatically via Gazebo's mimic constraint.
 
 ### Active ROS 2 Controllers
-- **`arm_controller`**: Interface type `joint_trajectory_controller/JointTrajectoryController` accepting trajectory goals on command interfaces.
-- **`gripper_controller`**: Interface type `position_controllers/JointGroupPositionController` controlling gripper positioning.
-- **`joint_state_broadcaster`**: Publishes state of all joints to `/joint_states`.
+
+| Controller | Type | Topic / Action |
+| :--- | :--- | :--- |
+| `joint_state_broadcaster` | JointStateBroadcaster | `/joint_states` |
+| `arm_controller` | JointTrajectoryController | `/arm_controller/follow_joint_trajectory` |
+| `gripper_controller` | JointGroupPositionController | `/gripper_controller/commands` |
 
 ---
 
 ## ❓ Troubleshooting & Common Issues
 
-#### Issue 1: Meshes are invisible or missing in Gazebo / RViz
-- **Cause**: Environment variable `GZ_SIM_RESOURCE_PATH` or package paths not sourced.
-- **Solution**: Ensure you ran `source ~/ros2_ws/install/setup.bash` in the terminal before launching.
+#### Controllers fail to activate (`Failed to activate controller`)
 
-#### Issue 2: `Package 'gp7_description' not found`
-- **Cause**: Workspace was not built or setup script was not sourced.
-- **Solution**: Run `cd ~/ros2_ws && colcon build --symlink-install` and source `install/setup.bash`.
+- **Cause A — YAML path not found**: The `gz_ros2_control` plugin couldn't load the controllers YAML. The URDF must contain an **absolute path** — `$(find ...)` syntax is not supported by Gazebo Sim.
+- **Cause B — Mimic joints in ros2_control**: Mimic joints have no command interfaces in Gazebo Sim. Only the primary actuated joint should appear in the `<ros2_control>` section.
+- **Fix**: Both issues are already resolved in this repo. If you re-clone and get this error, ensure you ran `colcon build --symlink-install` and the YAML path in `gp7.urdf` matches your install path.
 
-#### Issue 3: Missing `ros_gz_sim` or `gz_ros2_control` executable
-- **Cause**: ROS 2 Gazebo bridge packages are missing.
-- **Solution**: Install them via `sudo apt install ros-humble-ros-gz ros-humble-gz-ros2-control`.
+#### Goal rejected by controller
+
+- **Cause**: The arm controller received a goal before joint states were published (hardware state = NaN).
+- **Fix**: The `arm_controller_node` waits for `/joint_states` before accepting any goal. Look for the `✅ /joint_states received` log line before sending goals.
+
+#### Robot falls through the ground or floats
+
+- **Cause**: No world→base fixed joint in the URDF.
+- **Fix**: The URDF now includes `<link name="world"/>` and `<joint name="world_to_base" type="fixed">` anchoring `base_link` to the world frame.
+
+#### Meshes invisible in Gazebo / RViz2
+
+- **Cause**: `GZ_SIM_RESOURCE_PATH` not set or workspace not sourced.
+- **Fix**: Always run `source ~/ros2_ws/install/setup.bash` before launching. The launch file also sets `GZ_SIM_RESOURCE_PATH` automatically.
+
+#### `Package not found` errors
+
+```bash
+cd ~/ros2_ws && colcon build --symlink-install
+source ~/ros2_ws/install/setup.bash
+```
 
 ---
 
 ## 📜 License
 
-This project is licensed under the BSD-3-Clause License. See individual package `package.xml` files for detailed licensing metadata.
+This project is licensed under the BSD-3-Clause License. See individual package `package.xml` files for details.

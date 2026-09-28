@@ -47,16 +47,33 @@ def generate_launch_description():
         launch_arguments={'gz_args': '-r -v 4 empty.sdf'}.items(),
     )
 
+    # ── Clock bridge ──────────────────────────────────────────────────────────
+    # Gazebo Sim publishes clock internally. This bridge forwards it to the
+    # ROS /clock topic so controller_manager (and any use_sim_time node) can
+    # receive it and eliminate the "No clock received" warning.
+    clock_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='clock_bridge',
+        output='screen',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        parameters=[{'use_sim_time': True}],
+    )
+
     # ── Robot State Publisher ─────────────────────────────────────────────────
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
         output='both',
-        parameters=[{'robot_description': robot_desc}],
+        parameters=[{
+            'robot_description': robot_desc,
+            'use_sim_time': True,
+        }],
     )
 
     # ── Spawn the robot model inside Gazebo ───────────────────────────────────
+    # -allow_renaming false: fail instead of silently spawning a 2nd robot.
     gz_spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
@@ -65,7 +82,7 @@ def generate_launch_description():
         arguments=[
             '-string', robot_desc,
             '-name', 'motoman_gp7',
-            '-allow_renaming', 'true',
+            '-allow_renaming', 'false',
         ],
     )
 
@@ -139,6 +156,7 @@ def generate_launch_description():
     return LaunchDescription([
         set_env_gz_resource_path,
         gz_sim,
+        clock_bridge,          # ← bridges Gazebo clock → ROS /clock
         robot_state_publisher,
         gz_spawn_entity,
         delayed_jsb,
