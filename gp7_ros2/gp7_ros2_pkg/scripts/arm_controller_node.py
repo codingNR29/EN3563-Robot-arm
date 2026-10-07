@@ -179,7 +179,7 @@ class ArmControllerNode(Node):
 
     def _joint_state_callback(self, msg: JointState):
         # Track current positions so we can hold-in-place on stop
-        if len(msg.position) >= 6:
+        if all(j in dict(zip(msg.name, msg.position)) for j in ARM_JOINTS):
             # msg.name may not match ARM_JOINTS order — map by name
             name_to_pos = dict(zip(msg.name, msg.position))
             self._current_positions = [

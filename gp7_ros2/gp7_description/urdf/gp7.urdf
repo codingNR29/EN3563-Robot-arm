@@ -1,27 +1,26 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0"?>
 <robot name="motoman_gp7">
+  <!-- GP7 arm: 1:1 metres. Adaptive gripper: user-approved 1.5x CAD size
+       to accommodate a 50 mm cube; this is not a manufacturer-certified gripper. -->
   <material name="yaskawa_blue">
     <color rgba="0.129 0.149 0.749 1.0" />
   </material>
-
-  <!-- World anchor: fixes the robot base to the Gazebo ground plane -->
-  <link name="world"/>
+  <link name="world" />
   <joint name="world_to_base" type="fixed">
-    <parent link="world"/>
-    <child link="base_link"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="world" />
+    <child link="base_link" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
   </joint>
-
   <link name="base_link">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_base_link.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_base_link.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_base_link.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_base_link.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -33,13 +32,13 @@
   <link name="link_1_s">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_link_1_s.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_link_1_s.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_link_1_s.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_link_1_s.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -51,13 +50,13 @@
   <link name="link_2_l">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_link_2_l.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_link_2_l.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_link_2_l.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_link_2_l.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -69,13 +68,13 @@
   <link name="link_3_u">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_link_3_u.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_link_3_u.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_link_3_u.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_link_3_u.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -87,13 +86,13 @@
   <link name="link_4_r">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_link_4_r.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_link_4_r.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_link_4_r.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_link_4_r.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -105,13 +104,13 @@
   <link name="link_5_b">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_link_5_b.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_link_5_b.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_link_5_b.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_link_5_b.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -123,13 +122,13 @@
   <link name="link_6_t">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/visual/gp7_link_6_t.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/visual/gp7_link_6_t.stl" scale="1 1 1" />
       </geometry>
       <material name="yaskawa_blue" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/gp7/collision/gp7_link_6_t.stl" scale="2.00000 2.00000 2.00000" />
+        <mesh filename="package://gp7_description/meshes/gp7/collision/gp7_link_6_t.stl" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
@@ -141,43 +140,43 @@
   <joint name="joint_1_s" type="revolute">
     <parent link="base_link" />
     <child link="link_1_s" />
-    <origin xyz="0.00000 0.00000 0.66000" rpy="0 0 0" />
-    <axis xyz="0.0 0.0 1.2" />
+    <origin xyz="0 0 0.33" rpy="0 0 0" />
+    <axis xyz="0.0 0.0 1.0" />
     <limit lower="-2.9670" upper="2.9670" effort="212.66" velocity="6.5449" />
   </joint>
   <joint name="joint_2_l" type="revolute">
     <parent link="link_1_s" />
     <child link="link_2_l" />
-    <origin xyz="0.08000 0.00000 0.00000" rpy="0 0 0" />
-    <axis xyz="0.0 1.2 0.0" />
+    <origin xyz="0.04 0 0" rpy="0 0 0" />
+    <axis xyz="0.0 1.0 0.0" />
     <limit lower="-1.1344" upper="2.5307" effort="205.80" velocity="5.4977" />
   </joint>
   <joint name="joint_3_u" type="revolute">
     <parent link="link_2_l" />
     <child link="link_3_u" />
-    <origin xyz="0.00000 0.00000 0.89000" rpy="0 0 0" />
-    <axis xyz="0.0 -1.2 0.0" />
+    <origin xyz="0 0 0.445" rpy="0 0 0" />
+    <axis xyz="0.0 -1.0 0.0" />
     <limit lower="-1.2217" upper="3.3161" effort="106.82" velocity="7.1558" />
   </joint>
   <joint name="joint_4_r" type="revolute">
     <parent link="link_3_u" />
     <child link="link_4_r" />
-    <origin xyz="0.88000 0.00000 0.08000" rpy="0 0 0" />
-    <axis xyz="-1.2 0.0 0.0" />
+    <origin xyz="0.44 0 0.04" rpy="0 0 0" />
+    <axis xyz="-1.0 0.0 0.0" />
     <limit lower="-3.3161" upper="3.3161" effort="55.86" velocity="9.5993" />
   </joint>
   <joint name="joint_5_b" type="revolute">
     <parent link="link_4_r" />
     <child link="link_5_b" />
-    <origin xyz="0.00000 0.00000 0.00000" rpy="0 0 0" />
-    <axis xyz="0.0 -1.2 0.0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0.0 -1.0 0.0" />
     <limit lower="-2.3561" upper="2.3561" effort="32.68" velocity="9.5993" />
   </joint>
   <joint name="joint_6_t" type="revolute">
     <parent link="link_5_b" />
     <child link="link_6_t" />
-    <origin xyz="0.00000 0.00000 0.00000" rpy="0 0 0" />
-    <axis xyz="-1.2 0.0 0.0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="-1.0 0.0 0.0" />
     <limit lower="-6.2831" upper="6.2831" effort="22.54" velocity="17.4532" />
   </joint>
   <link name="flange">
@@ -188,7 +187,7 @@
     </inertial>
   </link>
   <joint name="joint_6_t-flange" type="fixed">
-    <origin xyz="0.16000 0.00000 0.00000" rpy="0 0 0" />
+    <origin xyz="0.08 0 0" rpy="0 0 0" />
     <parent link="link_6_t" />
     <child link="flange" />
   </joint>
@@ -200,7 +199,7 @@
     </inertial>
   </link>
   <joint name="flange-tool0" type="fixed">
-    <origin xyz="0.00000 0.00000 0.00000" rpy="3.14159265 -1.57079632 0" />
+    <origin xyz="0 0 0" rpy="3.14159265 -1.57079632 0" />
     <parent link="flange" />
     <child link="tool0" />
   </joint>
@@ -212,22 +211,22 @@
     </inertial>
   </link>
   <joint name="base_link-base" type="fixed">
-    <origin xyz="0.00000 0.00000 0.66000" rpy="0 0 0" />
+    <origin xyz="0 0 0.33" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="base" />
   </joint>
   <link name="gripper_base">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_base.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_base.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.0 0.0 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0 0 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_base.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_base.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.0 0.0 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0 0 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -238,20 +237,20 @@
   <joint name="tool0_to_gripper_base" type="fixed">
     <parent link="tool0" />
     <child link="gripper_base" />
-    <origin xyz="0 0 0.08" rpy="1.57079632 0 0" />
+    <origin xyz="0 0 0.04848" rpy="1.57079632 0 0" />
   </joint>
   <link name="gripper_left1">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_left1.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_left1.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.117 -0.0399 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0.0585 -0.01995 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_left1.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_left1.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.117 -0.0399 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0.0585 -0.01995 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -262,15 +261,15 @@
   <link name="gripper_left2">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_left2.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_left2.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.015 -0.0585 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0.0075 -0.02925 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_left2.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_left2.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.015 -0.0585 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0.0075 -0.02925 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -281,15 +280,15 @@
   <link name="gripper_left3">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_left3.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_left3.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.036 0.0075 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0.018 0.00375 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_left3.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_left3.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="0.036 0.0075 -0.036" rpy=" 0 0 0" />
+      <origin xyz="0.018 0.00375 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -300,15 +299,15 @@
   <link name="gripper_right1">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_right1.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_right1.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="-0.117 -0.0399 -0.036" rpy=" 0 0 0" />
+      <origin xyz="-0.0585 -0.01995 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_right1.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_right1.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="-0.117 -0.0399 -0.036" rpy=" 0 0 0" />
+      <origin xyz="-0.0585 -0.01995 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -319,15 +318,15 @@
   <link name="gripper_right2">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_right2.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_right2.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="-0.015 -0.0585 -0.036" rpy=" 0 0 0" />
+      <origin xyz="-0.0075 -0.02925 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_right2.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_right2.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="-0.015 -0.0585 -0.036" rpy=" 0 0 0" />
+      <origin xyz="-0.0075 -0.02925 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -338,15 +337,15 @@
   <link name="gripper_right3">
     <visual>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_right3.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_right3.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="-0.036 0.0075 -0.036" rpy=" 0 0 0" />
+      <origin xyz="-0.018 0.00375 -0.018" rpy=" 0 0 0" />
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/banula/ros2_ws/src/gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/gripper_right3.dae" scale="3.0 3.0 3.0" />
+        <mesh filename="package://gp7_description/meshes/adaptive_gripper/visual/gripper_right3.dae" scale="1.5 1.5 1.5" />
       </geometry>
-      <origin xyz="-0.036 0.0075 -0.036" rpy=" 0 0 0" />
+      <origin xyz="-0.018 0.00375 -0.018" rpy=" 0 0 0" />
     </collision>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -354,58 +353,57 @@
       <inertia ixx="0.01" iyy="0.01" izz="0.01" ixy="0.0" ixz="0.0" iyz="0.0" />
     </inertial>
   </link>
-  <joint name="gripper_controller" type="revolute">
-    <axis xyz="0.0 0.0 1.2" />
-    <limit effort="1000.0" lower="-0.7" upper="0.15" velocity="0" />
+  <joint name="gripper_driver" type="revolute">
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="1000.0" lower="-0.5" upper="0.15" velocity="1.0" />
     <parent link="gripper_base" />
     <child link="gripper_left3" />
-    <origin xyz="-0.036 0.015 0.0" rpy="0 0 0" />
+    <origin xyz="-0.018 0.0075 0" rpy="0 0 0" />
   </joint>
   <joint name="gripper_base_to_gripper_left2" type="revolute">
-    <axis xyz="0.0 0.0 1.2" />
-    <limit effort="1000.0" lower="-0.8" upper="0.5" velocity="0" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="1000.0" lower="-0.8" upper="0.5" velocity="1.0" />
     <parent link="gripper_base" />
     <child link="gripper_left2" />
-    <origin xyz="-0.015 0.081 0.0" rpy="0 0 0" />
-    <mimic joint="gripper_controller" multiplier="1.0" offset="0" />
+    <origin xyz="-0.0075 0.0405 0" rpy="0 0 0" />
+    <mimic joint="gripper_driver" multiplier="1.0" offset="0" />
   </joint>
   <joint name="gripper_left3_to_gripper_left1" type="revolute">
-    <axis xyz="0.0 0.0 1.2" />
-    <limit effort="1000.0" lower="-0.5" upper="0.5" velocity="0" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="1000.0" lower="-0.5" upper="0.5" velocity="1.0" />
     <parent link="gripper_left3" />
     <child link="gripper_left1" />
-    <origin xyz="-0.081 0.048 0.0" rpy="0 0 0" />
-    <mimic joint="gripper_controller" multiplier="-1.0" offset="0" />
+    <origin xyz="-0.0405 0.024 0" rpy="0 0 0" />
+    <mimic joint="gripper_driver" multiplier="-1.0" offset="0" />
   </joint>
   <joint name="gripper_base_to_gripper_right3" type="revolute">
-    <axis xyz="0.0 0.0 1.2" />
-    <limit effort="1000.0" lower="-0.15" upper="0.7" velocity="0" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="1000.0" lower="-0.16" upper="0.7" velocity="1.0" />
     <parent link="gripper_base" />
     <child link="gripper_right3" />
-    <origin xyz="0.036 0.015 0.0" rpy="0 0 0" />
-    <mimic joint="gripper_controller" multiplier="-1.0" offset="0" />
+    <origin xyz="0.018 0.0075 0" rpy="0 0 0" />
+    <mimic joint="gripper_driver" multiplier="-1.0" offset="0" />
   </joint>
   <joint name="gripper_base_to_gripper_right2" type="revolute">
-    <axis xyz="0.0 0.0 1.2" />
-    <limit effort="1000.0" lower="-0.5" upper="0.8" velocity="0" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="1000.0" lower="-0.5" upper="0.8" velocity="1.0" />
     <parent link="gripper_base" />
     <child link="gripper_right2" />
-    <origin xyz="0.015 0.081 0.0" rpy="0 0 0" />
-    <mimic joint="gripper_controller" multiplier="-1.0" offset="0" />
+    <origin xyz="0.0075 0.0405 0" rpy="0 0 0" />
+    <mimic joint="gripper_driver" multiplier="-1.0" offset="0" />
   </joint>
   <joint name="gripper_right3_to_gripper_right1" type="revolute">
-    <axis xyz="0.0 0.0 1.2" />
-    <limit effort="1000.0" lower="-0.5" upper="0.5" velocity="0" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="1000.0" lower="-0.5" upper="0.5" velocity="1.0" />
     <parent link="gripper_right3" />
     <child link="gripper_right1" />
-    <origin xyz="0.081 0.048 0.0" rpy="0 0 0" />
-    <mimic joint="gripper_controller" multiplier="1.0" offset="0" />
+    <origin xyz="0.0405 0.024 0" rpy="0 0 0" />
+    <mimic joint="gripper_driver" multiplier="1.0" offset="0" />
   </joint>
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters>/home/banula/ros2_ws/install/gp7_gazebo/share/gp7_gazebo/config/ros2_controllers.yaml</parameters>
+      <parameters>$(find gp7_gazebo)/config/ros2_controllers.yaml</parameters>
       <ros>
-        <!-- Tell controller_manager to use /clock from Gazebo sim instead of wall clock -->
         <parameter name="use_sim_time" type="bool">true</parameter>
       </ros>
     </plugin>
@@ -444,14 +442,36 @@
       <state_interface name="position" />
       <state_interface name="velocity" />
     </joint>
-    <!-- gripper_controller is the sole actuated gripper joint.
-         The remaining gripper joints are mimic joints — Gazebo Sim does not
-         create command interfaces for mimic joints, so they must NOT appear
-         in the ros2_control section or controller activation will fail. -->
-    <joint name="gripper_controller">
+    <joint name="gripper_driver">
       <command_interface name="position" />
       <state_interface name="position" />
       <state_interface name="velocity" />
     </joint>
+    <joint name="gripper_base_to_gripper_left2">
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+    </joint>
+    <joint name="gripper_left3_to_gripper_left1">
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+    </joint>
+    <joint name="gripper_base_to_gripper_right3">
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+    </joint>
+    <joint name="gripper_base_to_gripper_right2">
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+    </joint>
+    <joint name="gripper_right3_to_gripper_right1">
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+    </joint>
   </ros2_control>
+  <link name="grasp_frame" />
+  <joint name="tool0_to_grasp_frame" type="fixed">
+    <parent link="tool0" />
+    <child link="grasp_frame" />
+    <origin xyz="-0.0009111 0.0123 0.14598" rpy="0 0 0" />
+  </joint>
 </robot>

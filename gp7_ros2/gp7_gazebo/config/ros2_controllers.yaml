@@ -30,4 +30,4 @@ arm_controller:
 gripper_controller:
   ros__parameters:
     joints:
-      - gripper_controller
+      - gripper_driver

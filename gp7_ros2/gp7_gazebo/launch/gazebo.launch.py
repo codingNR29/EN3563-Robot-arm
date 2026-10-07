@@ -3,6 +3,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     IncludeLaunchDescription,
+    DeclareLaunchArgument,
     SetEnvironmentVariable,
     TimerAction,
     RegisterEventHandler,
@@ -10,6 +11,7 @@ from launch.actions import (
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
@@ -32,6 +34,8 @@ def generate_launch_description():
         controllers_yaml,
     )
 
+    robot_desc = robot_desc.replace('package://gp7_description/', pkg_gp7_description + '/')
+
     # ── GZ_SIM_RESOURCE_PATH so Gazebo can locate mesh files ─────────────────
     workspace_install_share = os.path.dirname(pkg_gp7_description)
     set_env_gz_resource_path = SetEnvironmentVariable(
@@ -44,7 +48,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': '-r -v 4 empty.sdf'}.items(),
+        launch_arguments={'gz_args': LaunchConfiguration('gz_args')}.items(),
     )
 
     # ── Clock bridge ──────────────────────────────────────────────────────────
@@ -94,7 +98,7 @@ def generate_launch_description():
     #      are no joint states to read.
     #
     # STRATEGY:
-    #   • Fire JSB spawner 20 s after launch (gives Gazebo plenty of boot time).
+    #   • Start JSB spawner and wait for controller_manager readiness.
     #   • Use OnProcessExit so arm + gripper spawners start ONLY after JSB
     #     spawner process exits (= JSB is active and healthy).
     #   • --controller-manager-timeout 60 makes each spawner keep retrying for
@@ -136,9 +140,9 @@ def generate_launch_description():
         output='screen',
     )
 
-    # Delay JSB spawner 20 s so Gazebo + gz_ros2_control finish initialising
+    # Start the spawner immediately; it waits for controller_manager readiness
     delayed_jsb = TimerAction(
-        period=20.0,
+        period=0.0,
         actions=[load_joint_state_broadcaster],
     )
 
@@ -154,6 +158,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument('gz_args', default_value='-r empty.sdf'),
         set_env_gz_resource_path,
         gz_sim,
         clock_bridge,          # ← bridges Gazebo clock → ROS /clock

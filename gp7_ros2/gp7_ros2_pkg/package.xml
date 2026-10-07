@@ -11,6 +11,13 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <!-- Runtime dependencies for the Python control nodes -->
+  <exec_depend>action_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
+  <exec_depend>python3-gz-transport13</exec_depend>
+  <exec_depend>python3-gz-msgs10</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>

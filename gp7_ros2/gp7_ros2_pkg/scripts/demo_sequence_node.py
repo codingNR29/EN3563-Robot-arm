@@ -30,8 +30,6 @@ ARM_JOINTS = [
     'joint_4_r', 'joint_5_b', 'joint_6_t',
 ]
 
-GRIPPER_MIMIC = [1.0, 1.0, -1.0, -1.0, -1.0, 1.0]
-
 
 def make_trajectory(waypoints: list) -> JointTrajectory:
     """Build a JointTrajectory message from a list of (positions, time_sec)."""
@@ -59,8 +57,7 @@ class DemoSequenceNode(Node):
             Float64MultiArray, '/gripper_controller/commands', 10,
         )
 
-        self.get_logger().info('Demo sequence node started. Running in 3 seconds…')
-        self.create_timer(3.0, self._run_sequence)
+        self.get_logger().info('Joint preset demo started (not the pick-and-place task).')
         self._sequence_done = False
 
     # ── helpers ──────────────────────────────────────────────────────────────
@@ -70,7 +67,7 @@ class DemoSequenceNode(Node):
         self.get_logger().info(f'▶  Arm → {label}')
         if not self._arm_client.wait_for_server(timeout_sec=10.0):
             self.get_logger().error('Arm action server not reachable!')
-            return False
+            raise RuntimeError(f'Arm motion failed: {label}')
 
         goal = FollowJointTrajectory.Goal()
         goal.trajectory = make_trajectory(waypoints)
@@ -81,7 +78,7 @@ class DemoSequenceNode(Node):
 
         if not goal_handle.accepted:
             self.get_logger().error(f'Goal "{label}" REJECTED.')
-            return False
+            raise RuntimeError(f'Arm motion failed: {label}')
 
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self, result_future)
@@ -92,10 +89,10 @@ class DemoSequenceNode(Node):
             return True
         else:
             self.get_logger().warn(f'   ⚠️  {label} ended with error: {result.error_string}')
-            return False
+            raise RuntimeError(f'Arm motion failed: {label}')
 
     def _send_gripper(self, driver_pos: float, label: str):
-        positions = [driver_pos * m for m in GRIPPER_MIMIC]
+        positions = [driver_pos]
         msg = Float64MultiArray()
         msg.data = positions
         self._gripper_pub.publish(msg)
@@ -153,7 +150,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = DemoSequenceNode()
     try:
-        rclpy.spin(node)
+        node._run_sequence()
     except KeyboardInterrupt:
         node.get_logger().info('Demo interrupted.')
     finally:

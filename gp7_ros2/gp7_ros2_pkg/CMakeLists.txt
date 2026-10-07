@@ -9,9 +9,12 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
+ament_python_install_package(gp7_motion)
+install(PROGRAMS scripts/pick_place_node.py DESTINATION lib/${PROJECT_NAME} RENAME pick_place_node)
 
 # ── Install Python scripts as ROS 2 executables ──────────────────────────────
 install(PROGRAMS
+  scripts/pick_place_node.py
   scripts/arm_controller_node.py
   scripts/gripper_controller_node.py
   scripts/demo_sequence_node.py

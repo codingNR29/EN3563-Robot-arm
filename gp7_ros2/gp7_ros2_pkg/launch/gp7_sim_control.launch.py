@@ -44,6 +44,7 @@ def generate_launch_description():
         executable='arm_controller_node',
         name='gp7_arm_controller',
         output='screen',
+        parameters=[{'use_sim_time': True}],
     )
 
     # ── Gripper controller node ─────────────────────────────────────────────
@@ -52,6 +53,7 @@ def generate_launch_description():
         executable='gripper_controller_node',
         name='gp7_gripper_controller',
         output='screen',
+        parameters=[{'use_sim_time': True}],
     )
 
     # Delay control nodes by 8 s to let Gazebo + controller_manager boot up

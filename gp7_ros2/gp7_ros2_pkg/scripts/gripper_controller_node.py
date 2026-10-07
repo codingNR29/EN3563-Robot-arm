@@ -5,7 +5,7 @@ GP7 Gripper Controller Node
 Sends position commands to the gripper_controller (JointGroupPositionController)
 running inside Gazebo Sim via the /gripper_controller/commands topic.
 
-The gripper has one primary "driver" joint (gripper_controller joint) that
+The gripper has one primary "driver" joint (gripper_driver joint) that
 mimic-links drive all other finger segments.
 
 Usage
@@ -18,35 +18,15 @@ Publish to move gripper:
   ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: 0.15}" --once  # open
 """
 
+import math
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64, Float64MultiArray
 
 
-# ── All gripper joints in the order declared in ros2_controllers.yaml ────────
-GRIPPER_JOINTS = [
-    'gripper_controller',
-    'gripper_base_to_gripper_left2',
-    'gripper_left3_to_gripper_left1',
-    'gripper_base_to_gripper_right3',
-    'gripper_base_to_gripper_right2',
-    'gripper_right3_to_gripper_right1',
-]
-
-# Mimic multipliers from URDF:
-#   gripper_controller        multiplier =  1.0
-#   gripper_base_to_gripper_left2  multiplier =  1.0
-#   gripper_left3_to_gripper_left1 multiplier = -1.0
-#   gripper_base_to_gripper_right3 multiplier = -1.0
-#   gripper_base_to_gripper_right2 multiplier = -1.0
-#   gripper_right3_to_gripper_right1 multiplier =  1.0
-MIMIC_MULTIPLIERS = [1.0, 1.0, -1.0, -1.0, -1.0, 1.0]
-
-
 class GripperControllerNode(Node):
     """
-    ROS 2 node that forwards a single gripper angle command to all
-    gripper joints respecting their mimic multipliers.
+    ROS 2 node that commands the single actuated gripper joint.
     """
 
     def __init__(self):
@@ -78,9 +58,12 @@ class GripperControllerNode(Node):
     # ── callbacks ─────────────────────────────────────────────────────────────
 
     def _gripper_cmd_callback(self, msg: Float64):
-        """Expand a single driver angle into all 6 gripper joint commands."""
+        """Command the driver; Gazebo applies the URDF mimic relationships."""
         driver_pos = msg.data
-        positions = [driver_pos * m for m in MIMIC_MULTIPLIERS]
+        if not math.isfinite(driver_pos) or not -0.5 <= driver_pos <= 0.15:
+            self.get_logger().error('Gripper command must be between -0.5 and 0.15 rad.')
+            return
+        positions = [driver_pos]
 
         out = Float64MultiArray()
         out.data = positions

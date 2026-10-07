@@ -13,6 +13,7 @@ find_package(gz_ros2_control REQUIRED)
 install(DIRECTORY
   launch
   config
+  worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
