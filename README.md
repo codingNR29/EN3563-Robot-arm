@@ -208,6 +208,20 @@ ros2 launch gp7_gazebo gazebo.launch.py
 ros2 run gp7_ros2_pkg demo_sequence_node
 ```
 
+### 4. Running the Pick and Place Task
+
+To launch the complete pick-and-place sequence:
+
+```bash
+cd /home/banula/ros2_ws/src
+unset AMENT_PREFIX_PATH
+source /opt/ros/jazzy/setup.bash
+source install/local_setup.bash
+export ROS_DOMAIN_ID=87
+export GZ_PARTITION=gp7_pick_place
+ros2 launch gp7_ros2_pkg pick_place.launch.py
+```
+
 ---
 
 ## 🧩 Adding Your Own Movements
