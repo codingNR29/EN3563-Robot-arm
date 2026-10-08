@@ -1,3 +1,5 @@
+> Launch the updated pick-and-place task: `./gp7_ros2/run_pick_place.sh` (resolves stale ROS/Python overlay paths).
+
 > **Assignment pick-and-place:** See [run instructions, implementation and validation](gp7_ros2/PICK_PLACE.md).
 
 # Yaskawa Motoman GP7 Robot Arm — ROS 2 Project

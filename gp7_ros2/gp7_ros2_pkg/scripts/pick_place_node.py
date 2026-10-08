@@ -20,6 +20,7 @@ from gz.msgs10.empty_pb2 import Empty
 from gz.msgs10.pose_v_pb2 import Pose_V
 from gz.msgs10.stringmsg_pb2 import StringMsg
 from gp7_motion.kinematics import ARM_JOINTS, Kinematics
+from gp7_motion.reach import carry_waypoints
 
 
 class PickPlace(Node):
@@ -172,20 +173,12 @@ class PickPlace(Node):
         if self.initial_rotation.magnitude() > .01:
             raise RuntimeError('Box is not upright before pickup')
         pickup_tcp = self.box[0].copy()
-        above = pickup_tcp.copy(); above[2] = .40
-        destination = self.destination + np.array([0., 0., .001])
-        above_destination = self.destination.copy(); above_destination[2] = .40
+        above, waypoints = carry_waypoints(pickup_tcp, self.destination)
         q_above = self.kin.ik(above, self.q, restart=True)
         # Preflight the complete Cartesian route before moving the robot.
         paths = []
         seed = q_above
-        for target, duration, label in [
-            (pickup_tcp, 5., 'Descend to Box B'),
-            (above, 5., 'Lift Box B vertically'),
-            (above_destination, 6., 'Transfer Box B upright'),
-            (destination, 4., 'Lower Box B onto Box A'),
-            (above_destination, 4., 'Retract adaptive gripper'),
-        ]:
+        for target, duration, label in waypoints:
             path = self.kin.segment(seed, target, duration)
             paths.append((path, label))
             seed = path[1][-1]
@@ -198,21 +191,22 @@ class PickPlace(Node):
         self.fingers(-.162)
         self.switch_grasp(True)
         self.carrying = True
-        for path in paths[1:4]:
+        for path in paths[1:-1]:
             self.move(*path)
         if np.linalg.norm(self.box[0]-self.destination) > .008:
             raise RuntimeError('Box feedback does not confirm placement; retaining grasp')
         self.switch_grasp(False)
         self.carrying = False
         self.fingers(.15)
-        self.move(*paths[4])
+        self.move(*paths[-1])
         self.settle(2.)
         final, quaternion = self.box
         error = float(np.linalg.norm(final-self.destination))
         orientation = float((self.initial_rotation.inv()*Rotation.from_quat(quaternion)).magnitude())
         if time.monotonic()-self.box_time > 1. or error > .008 or orientation > np.deg2rad(1.):
             raise RuntimeError(f'Placement verification failed: position error {error}, angle {orientation}')
-        report = {'success': True, 'final_box_center_m': final.tolist(),
+        report = {'success': True, 'pickup_center_m': self.pickup.tolist(),
+                  'pickup_radius_m': float(np.linalg.norm(self.pickup[:2])), 'final_box_center_m': final.tolist(),
                   'position_error_m': error, 'final_orientation_error_rad': orientation,
                   'max_carried_orientation_error_rad': self.max_orientation_error,
                   'grasp_model': 'Adaptive fingers with Gazebo fixed-joint grasp retention'}

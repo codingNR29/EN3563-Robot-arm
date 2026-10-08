@@ -2,7 +2,8 @@
 
 The task uses the GP7 at **1:1 scale**, the supplied seven adaptive-gripper meshes,
 and correctly sized boxes. The gripper opens, closes around Box B, carries it
-upright, releases it on Box A and retracts.
+upright, releases it on Box A and retracts. The default pickup is now near the
+maximum reachable ground-grasp distance.
 
 ## Dimensions and placement
 
@@ -19,7 +20,7 @@ upright, releases it on Box A and retracts.
 | Box B | 50 × 50 × 50 mm |
 | Robot base | (0, 0, 0) m |
 | Box A ground position | (0.55, 0.35, 0) m; model centre z=0.10 m |
-| Box B starting centre | Seeded random x=0.50–0.60 m, y=−0.23–−0.15 m, z=0.025 m |
+| Box B starting centre (default far mode) | Approximately (−0.06874, −0.92808, 0.025) m |
 | Final Box B centre | (0.55, 0.35, 0.225) m |
 
 The arm lengths, offsets, joint ranges and speed limits were checked against the
@@ -33,6 +34,29 @@ end-effector's TCP envelope.
 and is outside the real GP7's flange reach with this downward gripper. Both boxes
 retain the assignment's specified dimensions. Mention the changed position in
 your report.
+
+## Maximum-distance pickup
+
+`pickup_mode:=far` is the default. The launch computes the maximum horizontal
+radius for the box centre at z=0.025 m, subject to the actual URDF joint limits
+and the fixed downward grasp orientation. For this model the calculated boundary
+is **0.935621 m**. Box B is placed 5 mm inside it, at **0.930621 m** radius.
+The optimizer's result is checked against an independent two-link geometric
+upper bound in the tests. This is the maximum for this ground-grasp orientation,
+not a claim that all poses have the same maximum reach.
+
+The exact maximum corresponds to a straight-elbow singularity. The small margin
+allows continuous IK and feedback tracking. The robot first lifts the box centre
+to z=0.10 m, then moves inward to (0.45,−0.45,0.40) m before transferring to Box A.
+Trying to lift vertically to 0.40 m at maximum radius would exceed the workspace.
+All Cartesian segments preserve the box orientation and are preflighted before
+execution. The destination, arm dimensions, gripper and box sizes are unchanged.
+
+To restore the earlier nearby pickup:
+
+```bash
+ros2 launch gp7_ros2_pkg pick_place.launch.py pickup_mode:=near seed:=7
+```
 
 ## Adaptive gripper
 
@@ -67,7 +91,7 @@ spawned robot and does not reload an edited URDF.
 
 ```bash
 cd /home/banula/ros2_ws/src
-unset AMENT_PREFIX_PATH
+unset AMENT_PREFIX_PATH PYTHONPATH COLCON_PREFIX_PATH CMAKE_PREFIX_PATH
 source /opt/ros/jazzy/setup.bash
 colcon build --base-paths gp7_ros2 --symlink-install
 source install/local_setup.bash
@@ -76,9 +100,24 @@ export GZ_PARTITION=gp7_pick_place
 ros2 launch gp7_ros2_pkg pick_place.launch.py
 ```
 
+For subsequent launches, use the helper that isolates Python and ROS package
+paths from older installations:
+
+```bash
+cd /home/banula/ros2_ws/src
+./gp7_ros2/run_pick_place.sh
+# Optional: ./gp7_ros2/run_pick_place.sh pickup_mode:=near
+```
+
+If you see `No module named gp7_motion.reach`, an older `gp7_motion` package is
+usually ahead of this installation on `PYTHONPATH`. Clearing only
+`AMENT_PREFIX_PATH` does not fix Python's import ordering. The helper resets both
+inside its own process, leaving your terminal's environment unchanged.
+
 The launch waits for the arm and gripper controllers and performs the task once.
 Look for `PICK AND PLACE VERIFIED`. Restart the scene to repeat it. Optional
-arguments are `headless:=true`, `seed:=12`, and `run_task:=false` for inspection.
+arguments are `headless:=true`, `pickup_mode:=near`, and `run_task:=false` for inspection.
+`seed:=12` changes the random position only in near mode.
 If running the motion executable manually, supply pickup coordinates matching the
 spawned box; it rejects mismatches. Use a different ROS domain and Gazebo partition
 for concurrent simulations.
@@ -97,6 +136,7 @@ This is a simulation stop, not a physical robot emergency stop.
 - `gp7_description/urdf/gp7.urdf`: real-size arm, adaptive gripper, grasp frame.
 - `gp7_ros2_pkg/gp7_motion/model.py`: retains the complete URDF and adds grasp retention.
 - `gp7_ros2_pkg/gp7_motion/kinematics.py`: URDF FK and bounded numerical IK.
+- `gp7_ros2_pkg/gp7_motion/reach.py`: maximum ground reach and inward-lift waypoints.
 - `gp7_ros2_pkg/scripts/pick_place_node.py`: finger and arm sequencing with feedback.
 - `gp7_ros2_pkg/launch/pick_place.launch.py`: scene, robot and all three controllers.
 - `gp7_gazebo/worlds/pick_place.sdf`: true-size boxes and revised reachable destination.
@@ -114,7 +154,8 @@ PYTHONPATH=gp7_ros2/gp7_ros2_pkg python3 -m unittest discover \
 ```
 
 Tests cover arm/box dimensions, preservation of all seven gripper links, home FK,
-upright trajectory interpolation and unreachable-target rejection.
+upright trajectory interpolation, unreachable-target rejection, and the maximum
+reach bound plus the full far-pickup route.
 
 A full headless ROS 2 Jazzy / Gazebo Harmonic run with the real-size arm and
 adaptive gripper passed on 2026-10-07:
@@ -126,3 +167,9 @@ adaptive gripper passed on 2026-10-07:
 These are idealized simulation measurements, not physical robot accuracy claims.
 The group's DH derivation, frame diagrams and video still belong in the report;
 the executable uses URDF transforms and numerical IK.
+
+The far-pickup run passed on 2026-10-08: pickup radius 0.930621 m,
+final centre (0.550000133, 0.350000015, 0.224999603) m, placement error
+4.19e−7 m, and maximum measured carried orientation change 3.73e−7 rad.
+All six regression tests passed. These results use the same idealized grasp
+retention described above.

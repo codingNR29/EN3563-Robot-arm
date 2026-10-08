@@ -8,6 +8,7 @@ from scipy.interpolate import CubicHermiteSpline
 from scipy.spatial.transform import Rotation
 from gp7_motion.kinematics import Kinematics, DOWN
 from gp7_motion.model import task_description
+from gp7_motion.reach import farthest_ground_pickup, carry_waypoints
 
 URDF = Path(__file__).resolve().parents[2] / 'gp7_description/urdf/gp7.urdf'
 
@@ -37,6 +38,31 @@ class MotionTests(unittest.TestCase):
             for sample in interpolated:
                 pose = self.kin.fk(sample)
                 self.assertLess(Rotation.from_matrix(DOWN.T@pose[:3, :3]).magnitude(), 1e-4)
+            np.testing.assert_allclose(self.kin.fk(qs[-1])[:3, 3], target, atol=1e-6)
+            q = qs[-1]
+
+    def test_farthest_ground_pickup_and_complete_route(self):
+        pickup, radius = farthest_ground_pickup(self.kin)
+        # Independent geometric upper bound: two arm links aligned, with the
+        # downward wrist/tool height and planar tool offset accounted for.
+        arm_length = .445 + np.hypot(.440, .040)
+        wrist_height = .025 + .14598 + .080 - .330
+        upper_bound = .040 + np.sqrt(arm_length**2-wrist_height**2) + np.hypot(.0009111, .0123)
+        self.assertAlmostEqual(radius, upper_bound, places=6)
+        self.assertAlmostEqual(np.linalg.norm(pickup[:2]), radius-.005, places=7)
+        above, waypoints = carry_waypoints(pickup, [.55, .35, .225])
+        self.assertEqual(above[2], .10)
+        q = self.kin.ik(above, np.zeros(6), restart=True)
+        for target, duration, _label in waypoints:
+            t, qs, v = self.kin.segment(q, target, duration)
+            samples = CubicHermiteSpline(t, qs, v)(np.linspace(0, t[-1], 2*len(t)))
+            self.assertTrue(np.all(samples >= self.kin.lower))
+            self.assertTrue(np.all(samples <= self.kin.upper))
+            self.assertLessEqual(np.max(np.abs(v)), .500001)
+            for sample in samples:
+                pose = self.kin.fk(sample)
+                self.assertLess(Rotation.from_matrix(DOWN.T@pose[:3, :3]).magnitude(), 1e-4)
+                self.assertGreaterEqual(pose[2, 3], .02499)
             np.testing.assert_allclose(self.kin.fk(qs[-1])[:3, 3], target, atol=1e-6)
             q = qs[-1]
 
