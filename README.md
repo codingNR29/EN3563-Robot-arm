@@ -1,780 +1,179 @@
-<div align="center">
+# GP7 pick-and-place simulation
 
-# 🤖 Robotic Arm Pick-and-Place System
+This repository contains the original GP7 design assets and a ROS 2 / Gazebo
+simulation for the EN3563 robotics assignment. The simulation uses a six-axis
+GP7 model with an adaptive two-finger gripper.
 
-### EN3563 Robotics Mini Project
+## Assignment and status
 
-**Design, modelling, simulation and implementation of a multi-DoF robotic manipulator for an orientation-preserving pick-and-place task**
+The [task sheet](Task_sheet.pdf) asks for a robot with at least four degrees of
+freedom, labeled coordinate frames, a DH table, forward and inverse kinematics,
+and a pick-and-place task with unchanged object orientation and smooth motion.
+Submission also requires a report and a demonstration video.
 
-<br>
+The lecturer explicitly permits Box A to be placed at any reachable location.
+This implementation uses the scene below instead of the task sheet's original
+Box A position at (1, 1, 0). Positions are in metres, in the world/base frame.
 
-![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-22314E?style=for-the-badge\&logo=ros\&logoColor=white)
-![Gazebo](https://img.shields.io/badge/Gazebo-Harmonic-F58113?style=for-the-badge)
-![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge\&logo=ubuntu\&logoColor=white)
-![CAD](https://img.shields.io/badge/CAD-Robot%20Design-4A90E2?style=for-the-badge)
-![URDF](https://img.shields.io/badge/Robot-URDF-0A66C2?style=for-the-badge)
+| Item | Setting |
+| --- | --- |
+| Robot base | (0, 0, 0) |
+| Box A dimensions | 0.30 × 0.30 × 0.20 |
+| Box A ground position | (0.55, 0.35, 0); model center z = 0.10 |
+| Box B dimensions | 0.05 × 0.05 × 0.05 |
+| Default far pickup center | Approximately (-0.068740764, -0.928078308, 0.025) |
+| Placement target, Box B center | (0.55, 0.35, 0.225) |
 
-<br>
+`pickup_mode:=far` optimizes the horizontal ground-grasp radius while keeping
+the tool pointing down. The calculated boundary is about 0.935621 m; the box
+starts 5 mm inside it at radius 0.930621 m. This is a model-specific orientation
+constraint, not the reach of every possible pose. The far pickup is not random.
 
-**Robot Modelling → Kinematics → Motion Planning → Control → Pick & Place**
+`pickup_mode:=near seed:=7` instead samples x in [0.50, 0.60] and y in
+[-0.23, -0.15]. The seed makes that random placement repeatable. Offline tests
+cover this path, but a successful Gazebo run in near mode has not been verified
+in the recorded validation.
 
-</div>
+A GUI run of the far-pickup task succeeded on 11 October 2026. Robot spawning,
+all three active controllers, ROS communication, and Gazebo Python transport
+communication were also checked. The DH model agrees with URDF-based FK to
+numerical roundoff. A submitted report, labeled frame drawing, video, physical
+grasp reliability, and equivalence to the original CAD have not been verified.
+See [results and remaining work](docs/validation.md).
 
----
+## Files
 
-## 📌 Project Overview
+| Location | Purpose |
+| --- | --- |
+| [Original GP7 assets](<GP7 (Solidworks 2020)/>) | SolidWorks, STEP, STL, and exported URDF files |
+| [Temporary design parts](<Temporary 3D model parts/>) | Original STEP design assets; retained as project inputs |
+| [gp7_description](gp7_ros2/gp7_description/) | [Robot URDF](gp7_ros2/gp7_description/urdf/gp7.urdf), meshes, [RViz display launch](gp7_ros2/gp7_description/launch/display.launch.py), and RViz configuration |
+| [gp7_gazebo](gp7_ros2/gp7_gazebo/) | [Task world](gp7_ros2/gp7_gazebo/worlds/pick_place.sdf), [controllers](gp7_ros2/gp7_gazebo/config/ros2_controllers.yaml), and [empty-world launch](gp7_ros2/gp7_gazebo/launch/gazebo.launch.py) |
+| [gp7_ros2_pkg](gp7_ros2/gp7_ros2_pkg/) | Python motion and control package |
+| [kinematics.py](gp7_ros2/gp7_ros2_pkg/gp7_motion/kinematics.py) | URDF FK, bounded numerical IK, and trajectory sampling |
+| [reach.py](gp7_ros2/gp7_ros2_pkg/gp7_motion/reach.py) | Far-pickup optimization and carry waypoints |
+| [model.py](gp7_ros2/gp7_ros2_pkg/gp7_motion/model.py) | Mesh/controller path resolution and grasp plugin |
+| [pick_place_node.py](gp7_ros2/gp7_ros2_pkg/scripts/pick_place_node.py) | Task sequencing, feedback, cancellation, and result checks |
+| [pick_place.launch.py](gp7_ros2/gp7_ros2_pkg/launch/pick_place.launch.py) | Task scene, robot, controllers, and optional motion node |
+| [Arm presets](gp7_ros2/gp7_ros2_pkg/scripts/arm_controller_node.py), [gripper commands](gp7_ros2/gp7_ros2_pkg/scripts/gripper_controller_node.py), [demo sequence](gp7_ros2/gp7_ros2_pkg/scripts/demo_sequence_node.py) | Separate manual/preset controls; the demo is not the assignment task |
+| [gp7_sim_control.launch.py](gp7_ros2/gp7_ros2_pkg/launch/gp7_sim_control.launch.py) | Empty-world simulation with manual controller nodes |
+| [test_kinematics.py](gp7_ros2/gp7_ros2_pkg/test/test_kinematics.py) | Six offline regression tests |
 
-This project focuses on the development of a **multi-degree-of-freedom robotic arm** capable of performing an automated **pick-and-place task**.
+## Setup and build
 
-The project explores the complete robotic-manipulator development process, including:
+Use Ubuntu 24.04, ROS 2 Jazzy, Gazebo Harmonic (Sim 8), and system Python 3.12.
+Start in the repository root. Full dependency checks, installation commands,
+Fast-CDR troubleshooting, and the Transport 13.5.0 bindings build are in
+[setup instructions](docs/setup.md).
 
-* mechanical modelling
-* coordinate-frame assignment
-* forward and inverse kinematics
-* trajectory planning
-* joint velocity control
-* end-effector orientation control
-* simulation
-* robot control
-* potential physical implementation
+If Conda is active, run `conda deactivate` until it is inactive. Then:
 
-The robotic arm must pick up an object from a predefined location and place it at a target location while maintaining the object's **upright orientation throughout the motion**.
+```bash
+unset AMENT_PREFIX_PATH PYTHONPATH COLCON_PREFIX_PATH CMAKE_PREFIX_PATH LD_LIBRARY_PATH LD_PRELOAD
+source /opt/ros/jazzy/setup.bash
+command -v python3  # should be /usr/bin/python3
+colcon build --base-paths gp7_ros2 --symlink-install \
+  --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
+source install/local_setup.bash
 
-The project is being developed in stages, beginning with simulation and extending toward a possible **3D-printed physical robotic arm implementation**.
-
----
-
-## 🎯 Main Objective
-
-The goal is to develop a robotic manipulator that can:
-
-> **Detect or receive a target pick position, move toward the object, grasp it, transport it smoothly, and place it at the required destination while maintaining the desired orientation.**
-
-The project combines:
-
-```text
-Mechanical Design
-       ↓
-Robot Modelling
-       ↓
-Kinematics
-       ↓
-Trajectory Planning
-       ↓
-Joint Control
-       ↓
-Pick-and-Place Execution
+PYTHONPATH="$PWD/gp7_ros2/gp7_ros2_pkg${PYTHONPATH:+:$PYTHONPATH}" \
+  /usr/bin/python3 -m unittest discover -s gp7_ros2/gp7_ros2_pkg/test -v
 ```
 
----
+The tests check dimensions, home FK, near/far Cartesian routes and controller
+interpolation, gripper links, joint bounds, sampled velocity limits, and
+unreachable-target rejection. They do not run Gazebo.
 
-## 🦾 Project Scope
+## Inspect and run
 
-The robotic arm will contain at least **4 Degrees of Freedom (DoF)**.
+Use the same terminal after building. On the verified vendor installation, add
+the locally built transport bindings and existing message bindings:
 
-Depending on the final implementation, the system may include:
+```bash
+export PYTHONPATH="$HOME/.local/gp7-gz-transport13/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python${PYTHONPATH:+:$PYTHONPATH}"
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export ROS_DOMAIN_ID=87
+export GZ_PARTITION=gp7_pick_place
+/usr/bin/python3 -c 'from gz.transport13 import Node; from gz.msgs10.pose_v_pb2 import Pose_V'
 
-* Base rotation
-* Shoulder rotation
-* Elbow rotation
-* Wrist rotation
-* Additional wrist joints
-* Gripper mechanism
-
-The overall architecture is designed so that both **simulation and physical hardware** can use the same underlying kinematic concepts.
-
----
-
-## 🧠 System Architecture
-
-```text
-                 Robotic Arm
-                     │
-                     ▼
-              Mechanical Model
-                     │
-                     ▼
-            Coordinate Frames
-                     │
-                     ▼
-             D-H Parameters
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
- Forward Kinematics      Inverse Kinematics
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-             Trajectory Planner
-                     │
-                     ▼
-             Velocity Profile
-                     │
-                     ▼
-              Joint Controller
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
-      Simulation          Physical Robot
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-              Pick & Place Task
+ros2 launch gp7_ros2_pkg pick_place.launch.py run_task:=false headless:=false
 ```
 
----
+This starts the GUI and controllers but disables task motion. The grasp plugin
+starts attached; the task node normally detaches it during initialization, so
+Box B can be constrained in the inspection scene. Wait for activation of
+`joint_state_broadcaster`, `arm_controller`, and `gripper_controller`.
 
-## 🧩 Technologies
+In another terminal with the same sourced ROS environment and domain, check:
 
-<table>
-<tr>
-<td align="center"><b>ROS 2</b><br>Robot Middleware</td>
-<td align="center"><b>Gazebo</b><br>Simulation</td>
-<td align="center"><b>RViz</b><br>Visualization</td>
-<td align="center"><b>Ubuntu</b><br>Development Environment</td>
-</tr>
-
-<tr>
-<td align="center"><b>URDF</b><br>Robot Description</td>
-<td align="center"><b>CAD</b><br>Mechanical Design</td>
-<td align="center"><b>Python / C++</b><br>Control Algorithms</td>
-<td align="center"><b>ROS 2 Control</b><br>Joint Control</td>
-</tr>
-</table>
-
-Possible physical implementation technologies may include:
-
-```text
-3D Printed Links
-Servo Motors / Other Actuators
-Microcontroller
-Power Electronics
-Sensors
-Custom Gripper
+```bash
+ros2 service call /controller_manager/list_controllers \
+  controller_manager_msgs/srv/ListControllers '{}'
 ```
 
----
+All three states should be `active`. If the optional `ros2controlcli` package is
+installed, `ros2 control list_controllers` provides the same check.
 
-## 🔄 Development Workflow
+Close inspection with Ctrl+C before starting a fresh task scene. Run one of:
 
-```text
-CAD / Mechanical Model
-        │
-        ▼
-Define Robot Links
-        │
-        ▼
-Define Robot Joints
-        │
-        ▼
-Robot Description
-        │
-        ▼
-RViz Verification
-        │
-        ▼
-Gazebo Simulation
-        │
-        ▼
-Joint Control
-        │
-        ▼
-Forward Kinematics
-        │
-        ▼
-Inverse Kinematics
-        │
-        ▼
-Trajectory Planning
-        │
-        ▼
-Pick & Place
-        │
-        ▼
-Physical Prototype
+```bash
+# Complete task with the optimized far pickup
+ros2 launch gp7_ros2_pkg pick_place.launch.py run_task:=true headless:=false
+
+# Complete task with seeded random nearby pickup
+ros2 launch gp7_ros2_pkg pick_place.launch.py \
+  run_task:=true headless:=false pickup_mode:=near seed:=7
 ```
 
----
+The task runs once. Look for `PICK AND PLACE VERIFIED`. Restart the scene to
+repeat it. Stop the launch with Ctrl+C. For motion cancellation from another
+terminal in the same domain:
 
-## 📐 Kinematics
-
-### Forward Kinematics
-
-Forward kinematics determines the position and orientation of the end effector from the robot joint variables.
-
-For an \(n\)-joint robotic manipulator:
-
-
-$\{}^{0}T_{n}$
-=
-$\{}^{0}T_{1}$
-$\{}^{1}T_{2}$
-$\{}^{2}T_{3}$
-$\\cdots$
-$\{}^{n-1}T_{n}$
-
-
-The joint vector can be written as:
-
-$$
-q=
-\begin{bmatrix}
-q_1 &
-q_2 &
-\cdots &
-q_n
-\end{bmatrix}^{T}
-$$
-
-The transformation matrix provides the final:
-
-* position
-* orientation
-
-of the end effector.
-
----
-
-## 🔄 Inverse Kinematics
-
-Inverse kinematics solves the opposite problem.
-
-```text
-Desired End-Effector Pose
-
-[x, y, z, orientation]
-
-          ↓
-
-Inverse Kinematics
-
-          ↓
-
-Joint Configuration
-
-[q1, q2, ..., qn]
+```bash
+ros2 topic pub --once /gp7/stop std_msgs/msg/Empty '{}'
 ```
 
-The inverse-kinematics implementation will determine suitable joint angles while respecting:
-
-* mechanical joint limits
-* reachable workspace
-* desired end-effector orientation
-* collision constraints
-
----
-
-## 🧭 Coordinate Frames
-
-Coordinate frames are assigned to each robot link and joint.
-
-The robot model follows a serial-link structure such as:
-
-```text
-base_link
-    │
- joint_1
-    │
-  link_1
-    │
- joint_2
-    │
-  link_2
-    │
- joint_3
-    │
-  link_3
-    │
-   ...
-    │
- end_effector
-```
-
-The coordinate frames will be used to derive the **Denavit-Hartenberg parameters**.
-
----
-
-## 📊 D-H Parameters
-
-Each robot joint is represented using:
-
-| Parameter    | Meaning     |
-| ------------ | ----------- |
-| $\(a_i\)$      | Link length |
-| $\(\alpha_i\)$ | Link twist  |
-| $\(d_i\)$      | Link offset |
-| $\(\theta_i\)$ | Joint angle |
-
-The final D-H table will be determined from the geometry of the selected robotic arm configuration.
-
----
-
-## 🛣️ Pick-and-Place Motion
-
-The planned motion sequence is:
-
-```text
-HOME
-  │
-  ▼
-APPROACH OBJECT
-  │
-  ▼
-MOVE ABOVE OBJECT
-  │
-  ▼
-DESCEND
-  │
-  ▼
-GRASP
-  │
-  ▼
-LIFT
-  │
-  ▼
-MOVE TO DESTINATION
-  │
-  ▼
-DESCEND
-  │
-  ▼
-RELEASE
-  │
-  ▼
-RETREAT
-```
-
-Intermediate waypoints are used to avoid unnecessary collisions and make the robot motion easier to control.
-
----
-
-## 📦 Orientation Control
-
-A major requirement of the project is maintaining the object in an **upright orientation**.
-
-The end-effector position changes throughout the trajectory:
-
-$$
-p(t)=
-\begin{bmatrix}
-x(t)\\
-y(t)\\
-z(t)
-\end{bmatrix}
-$$
-
-while the desired orientation remains fixed:
-
-$$
-R(t)=R_{\text{desired}}
-$$
-
-The robot wrist joints compensate for changes in the shoulder and elbow configuration.
-
----
-
-## 📈 Trajectory Planning
-
-Robot joints should not move instantaneously between two configurations.
-
-The trajectory planner will generate smooth motion using methods such as:
-
-### Trapezoidal Velocity Profile
-
-```text
-Velocity
-
-          ┌───────────────┐
-         /                 \
-        /                   \
-───────                       ───────
-      Accel      Constant      Decel
-
-────────────────────────────────────→ Time
-```
-
-The motion contains:
-
-1. Acceleration
-2. Constant velocity
-3. Deceleration
-
-Possible future improvement:
-
-```text
-S-Curve Velocity Profile
-```
-
-which provides smoother acceleration and reduced jerk.
-
----
-
-## 🖥️ Simulation
-
-The simulation environment is being developed using:
-
-```text
-ROS 2
-Gazebo
-RViz
-URDF
-ros2_control
-```
-
-The simulation allows the team to verify:
-
-* robot geometry
-* joint behaviour
-* kinematics
-* workspace
-* trajectory planning
-* object manipulation
-
-before implementing the physical system.
-
----
-
-## 🔧 Physical Robot Development
-
-A physical version of the robotic arm may also be developed.
-
-The hardware implementation may include:
-
-```text
-3D Printed Robot Structure
-        │
-        ▼
-Servo / Joint Actuators
-        │
-        ▼
-Motor Controller
-        │
-        ▼
-Microcontroller
-        │
-        ▼
-Robot Control Software
-        │
-        ▼
-Custom Gripper
-```
-
-Design priorities include:
-
-* low manufacturing cost
-* lightweight links
-* sufficient joint torque
-* internal cable routing
-* modular components
-* easy maintenance
-* 3D-printable construction
-
----
-
-## 🖨️ 3D Printed Design Goals
-
-If the hardware implementation is developed, the mechanical design will aim for:
-
-* Fully or mostly 3D-printable parts
-* Hidden or internally routed wiring
-* Compact industrial-style appearance
-* Replaceable joints
-* Modular link sections
-* Lightweight structure
-* Stable robot base
-* Accessible electronics
-* Simple gripper mounting
-
----
-
-## 🎮 Robot Control
-
-The control system will provide commands for each robot joint.
-
-Example structure:
-
-```text
-Trajectory Planner
-       │
-       ▼
-Desired Joint Positions
-       │
-       ▼
-Joint Controller
-       │
-       ▼
-Joint Actuators
-       │
-       ▼
-Robot Motion
-```
-
-For simulation, joint control can be implemented using:
-
-```text
-ros2_control
-        │
-        ▼
-joint_state_broadcaster
-        │
-        ▼
-joint_trajectory_controller
-```
-
----
-
-## 📂 Repository Structure
-
-```text
-robotic-arm-project/
-│
-├── robot_description/
-│   │
-│   ├── urdf/
-│   ├── meshes/
-│   ├── launch/
-│   ├── config/
-│   └── worlds/
-│
-├── kinematics/
-│   ├── forward_kinematics/
-│   └── inverse_kinematics/
-│
-├── trajectory/
-│   ├── trajectory_planner/
-│   └── velocity_profile/
-│
-├── control/
-│
-├── simulation/
-│
-├── hardware/
-│   ├── cad/
-│   ├── electronics/
-│   └── firmware/
-│
-├── docs/
-│
-├── media/
-│   ├── images/
-│   └── videos/
-│
-└── README.md
-```
-
----
-
-## 🚀 Current Development Status
-
-| Development Stage          |   Status   |
-| -------------------------- | :--------: |
-| Project planning           |      ✅     |
-| CAD model preparation      |      ✅     |
-| Robot link identification  |      ✅     |
-| Joint identification       |      ✅     |
-| URDF generation            |      ✅     |
-| URDF cleanup               |      ✅     |
-| Robot visualization        |     🚧     |
-| Gazebo simulation          |     🚧     |
-| Joint control              |      ⏳     |
-| Gripper design             |      ⏳     |
-| D-H parameter derivation   |      ⏳     |
-| Forward kinematics         |      ⏳     |
-| Inverse kinematics         |      ⏳     |
-| Trajectory planning        |      ⏳     |
-| Velocity control           |      ⏳     |
-| Pick-and-place execution   |      ⏳     |
-| Physical robot development | 🔬 Planned |
-
----
-
-## 🗺️ Project Roadmap
-
-```text
-✅ Define Project Requirements
-        │
-        ▼
-✅ Prepare Robot CAD
-        │
-        ▼
-✅ Define Links & Joints
-        │
-        ▼
-✅ Generate URDF
-        │
-        ▼
-🚧 Verify Robot Model
-        │
-        ▼
-⬜ Gazebo Simulation
-        │
-        ▼
-⬜ Joint Control
-        │
-        ▼
-⬜ Coordinate Frames
-        │
-        ▼
-⬜ D-H Parameters
-        │
-        ▼
-⬜ Forward Kinematics
-        │
-        ▼
-⬜ Inverse Kinematics
-        │
-        ▼
-⬜ Trajectory Planning
-        │
-        ▼
-⬜ Velocity Control
-        │
-        ▼
-⬜ Orientation Control
-        │
-        ▼
-⬜ Pick & Place
-        │
-        ▼
-⬜ Physical Prototype
-```
-
----
-
-## 📸 Project Media
-
-### Robot Model
-
-<p align="center">
-  <i>Robot model screenshot will be added here.</i>
-</p>
-
-<!--
-<p align="center">
-  <img src="media/images/robot_model.png" width="750">
-</p>
--->
-
----
-
-### Simulation
-
-<p align="center">
-  <i>Simulation screenshot will be added here.</i>
-</p>
-
-<!--
-<p align="center">
-  <img src="media/images/simulation.png" width="750">
-</p>
--->
-
----
-
-### Physical Prototype
-
-<p align="center">
-  <i>Physical robot images will be added here if hardware implementation is completed.</i>
-</p>
-
----
-
-### Pick-and-Place Demonstration
-
-<p align="center">
-  <i>Final GIF / video will be added here.</i>
-</p>
-
----
-
-## 🎥 Demonstration
-
-The final demonstration will show:
-
-* robot initialization
-* movement toward the object
-* object grasping
-* smooth transportation
-* upright orientation preservation
-* placement at the destination
-* return or retreat motion
-
----
-
-## 🧪 Future Improvements
-
-Potential extensions include:
-
-* Computer vision
-* Automatic object detection
-* Camera-based object localisation
-* Collision avoidance
-* Workspace optimisation
-* Improved gripper design
-* S-curve trajectory generation
-* Feedback control
-* Physical joint encoders
-* Wireless robot control
-* Mobile or web-based control interface
-
----
-
-## 📚 Academic Scope
-
-This project is developed for:
-
-**EN3563 – Robotics**
-**Mini Project: Implementation of a Robot Arm**
-
-Key concepts covered include:
-
-* Serial-link manipulators
-* Degrees of freedom
-* Coordinate systems
-* Denavit-Hartenberg modelling
-* Forward kinematics
-* Inverse kinematics
-* Robot workspace
-* Trajectory generation
-* Velocity control
-* Orientation control
-* Robot simulation
-* Robotic manipulation
-
----
-
-## 👥 Team
-
-| Member   | Index Number |
-| -------- | ------------ |
-| Member 1 | `XX_ENG_XXX` |
-| Member 2 | `XX_ENG_XXX` |
-| Member 3 | `XX_ENG_XXX` |
-
----
-
-## 📖 References
-
-* ROS 2 Documentation
-* Gazebo Documentation
-* Robotics course material
-* CAD and mechanical-design references
-* Robot actuator and controller documentation
-
----
-
-<div align="center">
-
-## ⭐ Project Goal
-
-**Develop a complete robotic-arm system capable of smooth, controlled and orientation-preserving pick-and-place manipulation.**
-
-<br>
-
-`Mechanical Design` • `Kinematics` • `ROS 2` • `Simulation` • `Control` • `3D Printing`
-
-<br>
-
-### 🤖 EN3563 Robotics
-
-</div>
+Cancellation retains an attached box; restart the scene before another task.
+This is a simulation cancellation mechanism, not a physical emergency stop.
+If a failed launch leaves Gazebo running, inspect `pgrep -af 'gz sim'` and verify
+process identities before stopping them. Avoid starting another scene in the
+same partition. [Troubleshooting](docs/setup.md#middleware-version-mismatch)
+explains the middleware failure encountered during setup.
+
+The current [helper](gp7_ros2/run_pick_place.sh) clears `PYTHONPATH`, which removes
+the explicit binding paths above. Use these direct launch commands; the helper
+has not been changed to support the local bindings installation.
+
+## Kinematics and motion
+
+[The DH derivation](docs/kinematics.md) uses standard DH:
+`A_i = Rz(theta_i) Tz(d_i) Tx(a_i) Rx(alpha_i)`. Its only joint-angle offset is
+`theta_2 = q_2 - pi/2`. The fixed base transform is identity, and a separate
+fixed tool transform includes the flange, tool0 rotation, and grasp-frame offset.
+The table was compared with executable URDF FK at four stated configurations
+and 100 configurations sampled within joint limits.
+
+The executable uses URDF transforms for FK. IK uses bounded SciPy least squares
+to minimize position error and rotation-vector error while respecting joint
+limits. It can reject unreachable targets or fail to converge; it is not an
+analytic IK solver or a collision checker.
+
+The planner preflights a scene-specific Cartesian route with fixed downward
+rotation `diag(1, -1, -1)`. The initial approach is joint-space motion. At the far
+pickup, it first lifts to z = 0.10 m, moves inward while rising, then transfers
+above Box A at z = 0.40 m. It lowers to z = 0.226 m, releases, and retreats.
+
+Quintic time scaling `10u^3 - 15u^4 + 6u^5` gives smooth position interpolation.
+Position/velocity samples start at 50 ms spacing, and time is stretched when
+needed to keep sampled joint speeds below 0.5 rad/s or the smaller URDF limit.
+The controller uses position command interfaces. No measured acceleration or
+jerk limits are claimed.
+
+The gripper has one commanded driver and five mimic joints. Its seven CAD
+meshes and joint spacing are scaled to 1.5 times their native size to fit the
+50 mm box; the arm remains at unit scale. Finger motion uses quintic scaling
+and position feedback. After closing near Box B, a detachable fixed joint
+retains the object. Release removes that constraint and the box settles under
+gravity. This demonstrates idealized retention, not a friction/contact-force
+grasp. Arm mass and inertia entries are estimates, and the route is not a
+general collision planner.
