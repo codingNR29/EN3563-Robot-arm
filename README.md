@@ -1,780 +1,379 @@
-<div align="center">
+> Launch the updated pick-and-place task: `./gp7_ros2/run_pick_place.sh` (resolves stale ROS/Python overlay paths).
 
-# 🤖 Robotic Arm Pick-and-Place System
+> **Assignment pick-and-place:** See [run instructions, implementation and validation](gp7_ros2/PICK_PLACE.md).
 
-### EN3563 Robotics Mini Project
+# Yaskawa Motoman GP7 Robot Arm — ROS 2 Project
 
-**Design, modelling, simulation and implementation of a multi-DoF robotic manipulator for an orientation-preserving pick-and-place task**
-
-<br>
-
-![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-22314E?style=for-the-badge\&logo=ros\&logoColor=white)
-![Gazebo](https://img.shields.io/badge/Gazebo-Harmonic-F58113?style=for-the-badge)
-![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge\&logo=ubuntu\&logoColor=white)
-![CAD](https://img.shields.io/badge/CAD-Robot%20Design-4A90E2?style=for-the-badge)
-![URDF](https://img.shields.io/badge/Robot-URDF-0A66C2?style=for-the-badge)
-
-<br>
-
-**Robot Modelling → Kinematics → Motion Planning → Control → Pick & Place**
-
-</div>
+Welcome to the **Yaskawa Motoman GP7 Robot Arm** ROS 2 repository! This project provides complete ROS 2 integration for the 6-axis Yaskawa Motoman GP7 industrial robotic arm equipped with an adaptive 2-finger gripper. It includes URDF kinematic models, mesh representations, RViz2 visualization, Gazebo Sim physics simulation powered by `gz_ros2_control`, and Python controller nodes for commanding the robot via code.
 
 ---
 
-## 📌 Project Overview
+## 📌 Table of Contents
 
-This project focuses on the development of a **multi-degree-of-freedom robotic arm** capable of performing an automated **pick-and-place task**.
-
-The project explores the complete robotic-manipulator development process, including:
-
-* mechanical modelling
-* coordinate-frame assignment
-* forward and inverse kinematics
-* trajectory planning
-* joint velocity control
-* end-effector orientation control
-* simulation
-* robot control
-* potential physical implementation
-
-The robotic arm must pick up an object from a predefined location and place it at a target location while maintaining the object's **upright orientation throughout the motion**.
-
-The project is being developed in stages, beginning with simulation and extending toward a possible **3D-printed physical robotic arm implementation**.
+- [Overview](#-overview)
+- [Directory & Folder Structure](#-directory--folder-structure)
+- [Prerequisites](#-prerequisites)
+- [Step-by-Step Installation & Setup](#-step-by-step-installation--setup)
+- [How to Run the Project](#-how-to-run-the-project)
+  - [1. Visualizing in RViz2](#1-visualizing-in-rviz2)
+  - [2. Simulating in Gazebo Sim](#2-simulating-in-gazebo-sim)
+  - [3. Controlling the Robot via Code](#3-controlling-the-robot-via-code)
+- [Adding Your Own Movements](#-adding-your-own-movements)
+- [Robot Kinematics & Controllers](#-robot-kinematics--controllers)
+- [Troubleshooting & Common Issues](#-troubleshooting--common-issues)
+- [License](#-license)
 
 ---
 
-## 🎯 Main Objective
+## 🤖 Overview
 
-The goal is to develop a robotic manipulator that can:
+The **Motoman GP7** is a high-speed 6-axis industrial robot arm designed for assembly, handling, and pick-and-place operations. This repository packages the robot model into ROS 2 format for trajectory planning, visualization, and simulation.
 
-> **Detect or receive a target pick position, move toward the object, grasp it, transport it smoothly, and place it at the required destination while maintaining the desired orientation.**
+Key features:
+- 🎨 **Detailed URDF & 3D Meshes** — High-resolution visual (`.stl`) and collision geometries for the GP7 arm and adaptive gripper.
+- 🎛️ **RViz2 Integration** — Joint GUI slider control for testing kinematics interactively.
+- 🌐 **Gazebo Sim** — Physics-based simulation with `gz_ros2_control`; robot is ground-anchored via a fixed world joint.
+- 🕹️ **Python Controller Nodes** — `arm_controller_node`, `gripper_controller_node`, and `demo_sequence_node` for commanding the robot programmatically.
+- ✅ **Working Controller Stack** — `joint_state_broadcaster` → `arm_controller` (JointTrajectoryController) → `gripper_controller` (JointGroupPositionController), all verified active.
 
-The project combines:
+---
+
+## 📂 Directory & Folder Structure
 
 ```text
-Mechanical Design
-       ↓
-Robot Modelling
-       ↓
-Kinematics
-       ↓
-Trajectory Planning
-       ↓
-Joint Control
-       ↓
-Pick-and-Place Execution
-```
-
----
-
-## 🦾 Project Scope
-
-The robotic arm will contain at least **4 Degrees of Freedom (DoF)**.
-
-Depending on the final implementation, the system may include:
-
-* Base rotation
-* Shoulder rotation
-* Elbow rotation
-* Wrist rotation
-* Additional wrist joints
-* Gripper mechanism
-
-The overall architecture is designed so that both **simulation and physical hardware** can use the same underlying kinematic concepts.
-
----
-
-## 🧠 System Architecture
-
-```text
-                 Robotic Arm
-                     │
-                     ▼
-              Mechanical Model
-                     │
-                     ▼
-            Coordinate Frames
-                     │
-                     ▼
-             D-H Parameters
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
- Forward Kinematics      Inverse Kinematics
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-             Trajectory Planner
-                     │
-                     ▼
-             Velocity Profile
-                     │
-                     ▼
-              Joint Controller
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
-      Simulation          Physical Robot
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-              Pick & Place Task
-```
-
----
-
-## 🧩 Technologies
-
-<table>
-<tr>
-<td align="center"><b>ROS 2</b><br>Robot Middleware</td>
-<td align="center"><b>Gazebo</b><br>Simulation</td>
-<td align="center"><b>RViz</b><br>Visualization</td>
-<td align="center"><b>Ubuntu</b><br>Development Environment</td>
-</tr>
-
-<tr>
-<td align="center"><b>URDF</b><br>Robot Description</td>
-<td align="center"><b>CAD</b><br>Mechanical Design</td>
-<td align="center"><b>Python / C++</b><br>Control Algorithms</td>
-<td align="center"><b>ROS 2 Control</b><br>Joint Control</td>
-</tr>
-</table>
-
-Possible physical implementation technologies may include:
-
-```text
-3D Printed Links
-Servo Motors / Other Actuators
-Microcontroller
-Power Electronics
-Sensors
-Custom Gripper
-```
-
----
-
-## 🔄 Development Workflow
-
-```text
-CAD / Mechanical Model
-        │
-        ▼
-Define Robot Links
-        │
-        ▼
-Define Robot Joints
-        │
-        ▼
-Robot Description
-        │
-        ▼
-RViz Verification
-        │
-        ▼
-Gazebo Simulation
-        │
-        ▼
-Joint Control
-        │
-        ▼
-Forward Kinematics
-        │
-        ▼
-Inverse Kinematics
-        │
-        ▼
-Trajectory Planning
-        │
-        ▼
-Pick & Place
-        │
-        ▼
-Physical Prototype
-```
-
----
-
-## 📐 Kinematics
-
-### Forward Kinematics
-
-Forward kinematics determines the position and orientation of the end effector from the robot joint variables.
-
-For an \(n\)-joint robotic manipulator:
-
-
-$\{}^{0}T_{n}$
-=
-$\{}^{0}T_{1}$
-$\{}^{1}T_{2}$
-$\{}^{2}T_{3}$
-$\\cdots$
-$\{}^{n-1}T_{n}$
-
-
-The joint vector can be written as:
-
-$$
-q=
-\begin{bmatrix}
-q_1 &
-q_2 &
-\cdots &
-q_n
-\end{bmatrix}^{T}
-$$
-
-The transformation matrix provides the final:
-
-* position
-* orientation
-
-of the end effector.
-
----
-
-## 🔄 Inverse Kinematics
-
-Inverse kinematics solves the opposite problem.
-
-```text
-Desired End-Effector Pose
-
-[x, y, z, orientation]
-
-          ↓
-
-Inverse Kinematics
-
-          ↓
-
-Joint Configuration
-
-[q1, q2, ..., qn]
-```
-
-The inverse-kinematics implementation will determine suitable joint angles while respecting:
-
-* mechanical joint limits
-* reachable workspace
-* desired end-effector orientation
-* collision constraints
-
----
-
-## 🧭 Coordinate Frames
-
-Coordinate frames are assigned to each robot link and joint.
-
-The robot model follows a serial-link structure such as:
-
-```text
-base_link
+ros2_ws/src/
+└── gp7_ros2/
+    ├── gp7_description/           # Robot model & visualization
+    │   ├── launch/                # display.launch.py (RViz2)
+    │   ├── meshes/                # STL mesh files (arm + gripper)
+    │   ├── rviz/                  # RViz2 config (display.rviz)
+    │   └── urdf/gp7.urdf          # Full robot URDF (with ros2_control + world joint)
     │
- joint_1
+    ├── gp7_gazebo/                # Gazebo simulation package
+    │   ├── config/
+    │   │   └── ros2_controllers.yaml   # Controller types and joint mappings
+    │   └── launch/
+    │       └── gazebo.launch.py        # Main sim launch (spawns robot + controllers)
     │
-  link_1
-    │
- joint_2
-    │
-  link_2
-    │
- joint_3
-    │
-  link_3
-    │
-   ...
-    │
- end_effector
-```
-
-The coordinate frames will be used to derive the **Denavit-Hartenberg parameters**.
-
----
-
-## 📊 D-H Parameters
-
-Each robot joint is represented using:
-
-| Parameter    | Meaning     |
-| ------------ | ----------- |
-| $\(a_i\)$      | Link length |
-| $\(\alpha_i\)$ | Link twist  |
-| $\(d_i\)$      | Link offset |
-| $\(\theta_i\)$ | Joint angle |
-
-The final D-H table will be determined from the geometry of the selected robotic arm configuration.
-
----
-
-## 🛣️ Pick-and-Place Motion
-
-The planned motion sequence is:
-
-```text
-HOME
-  │
-  ▼
-APPROACH OBJECT
-  │
-  ▼
-MOVE ABOVE OBJECT
-  │
-  ▼
-DESCEND
-  │
-  ▼
-GRASP
-  │
-  ▼
-LIFT
-  │
-  ▼
-MOVE TO DESTINATION
-  │
-  ▼
-DESCEND
-  │
-  ▼
-RELEASE
-  │
-  ▼
-RETREAT
-```
-
-Intermediate waypoints are used to avoid unnecessary collisions and make the robot motion easier to control.
-
----
-
-## 📦 Orientation Control
-
-A major requirement of the project is maintaining the object in an **upright orientation**.
-
-The end-effector position changes throughout the trajectory:
-
-$$
-p(t)=
-\begin{bmatrix}
-x(t)\\
-y(t)\\
-z(t)
-\end{bmatrix}
-$$
-
-while the desired orientation remains fixed:
-
-$$
-R(t)=R_{\text{desired}}
-$$
-
-The robot wrist joints compensate for changes in the shoulder and elbow configuration.
-
----
-
-## 📈 Trajectory Planning
-
-Robot joints should not move instantaneously between two configurations.
-
-The trajectory planner will generate smooth motion using methods such as:
-
-### Trapezoidal Velocity Profile
-
-```text
-Velocity
-
-          ┌───────────────┐
-         /                 \
-        /                   \
-───────                       ───────
-      Accel      Constant      Decel
-
-────────────────────────────────────→ Time
-```
-
-The motion contains:
-
-1. Acceleration
-2. Constant velocity
-3. Deceleration
-
-Possible future improvement:
-
-```text
-S-Curve Velocity Profile
-```
-
-which provides smoother acceleration and reduced jerk.
-
----
-
-## 🖥️ Simulation
-
-The simulation environment is being developed using:
-
-```text
-ROS 2
-Gazebo
-RViz
-URDF
-ros2_control
-```
-
-The simulation allows the team to verify:
-
-* robot geometry
-* joint behaviour
-* kinematics
-* workspace
-* trajectory planning
-* object manipulation
-
-before implementing the physical system.
-
----
-
-## 🔧 Physical Robot Development
-
-A physical version of the robotic arm may also be developed.
-
-The hardware implementation may include:
-
-```text
-3D Printed Robot Structure
-        │
-        ▼
-Servo / Joint Actuators
-        │
-        ▼
-Motor Controller
-        │
-        ▼
-Microcontroller
-        │
-        ▼
-Robot Control Software
-        │
-        ▼
-Custom Gripper
-```
-
-Design priorities include:
-
-* low manufacturing cost
-* lightweight links
-* sufficient joint torque
-* internal cable routing
-* modular components
-* easy maintenance
-* 3D-printable construction
-
----
-
-## 🖨️ 3D Printed Design Goals
-
-If the hardware implementation is developed, the mechanical design will aim for:
-
-* Fully or mostly 3D-printable parts
-* Hidden or internally routed wiring
-* Compact industrial-style appearance
-* Replaceable joints
-* Modular link sections
-* Lightweight structure
-* Stable robot base
-* Accessible electronics
-* Simple gripper mounting
-
----
-
-## 🎮 Robot Control
-
-The control system will provide commands for each robot joint.
-
-Example structure:
-
-```text
-Trajectory Planner
-       │
-       ▼
-Desired Joint Positions
-       │
-       ▼
-Joint Controller
-       │
-       ▼
-Joint Actuators
-       │
-       ▼
-Robot Motion
-```
-
-For simulation, joint control can be implemented using:
-
-```text
-ros2_control
-        │
-        ▼
-joint_state_broadcaster
-        │
-        ▼
-joint_trajectory_controller
+    └── gp7_ros2_pkg/              # Python controller nodes package
+        ├── scripts/
+        │   ├── arm_controller_node.py       # Trajectory action client
+        │   ├── gripper_controller_node.py   # Gripper position forwarder
+        │   └── demo_sequence_node.py        # Automated demo sequence
+        └── launch/
+            └── gp7_sim_control.launch.py    # All-in-one launch (Gazebo + nodes)
 ```
 
 ---
 
-## 📂 Repository Structure
+## 🛠️ Prerequisites
 
-```text
-robotic-arm-project/
-│
-├── robot_description/
-│   │
-│   ├── urdf/
-│   ├── meshes/
-│   ├── launch/
-│   ├── config/
-│   └── worlds/
-│
-├── kinematics/
-│   ├── forward_kinematics/
-│   └── inverse_kinematics/
-│
-├── trajectory/
-│   ├── trajectory_planner/
-│   └── velocity_profile/
-│
-├── control/
-│
-├── simulation/
-│
-├── hardware/
-│   ├── cad/
-│   ├── electronics/
-│   └── firmware/
-│
-├── docs/
-│
-├── media/
-│   ├── images/
-│   └── videos/
-│
-└── README.md
+| Requirement | Version |
+| :--- | :--- |
+| Operating System | Ubuntu 24.04 LTS |
+| ROS 2 Distribution | **ROS 2 Jazzy** |
+| Gazebo | Gazebo Sim 8 (Harmonic) via `ros-jazzy-ros-gz` |
+| Build Tools | `colcon`, `rosdep`, `git` |
+
+---
+
+## ⚙️ Step-by-Step Installation & Setup
+
+### Step 1: Install ROS 2 Jazzy & Required Packages
+
+Follow the [official ROS 2 Jazzy installation guide](https://docs.ros.org/en/jazzy/Installation.html), then install the required packages:
+
+```bash
+sudo apt update && sudo apt install -y \
+  ros-jazzy-desktop \
+  ros-jazzy-ros2-control \
+  ros-jazzy-ros2-controllers \
+  ros-jazzy-ros-gz \
+  ros-jazzy-gz-ros2-control \
+  ros-jazzy-joint-state-publisher-gui \
+  python3-colcon-common-extensions \
+  python3-rosdep
+```
+
+### Step 2: Create ROS 2 Workspace
+
+```bash
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+```
+
+### Step 3: Clone the Repository
+
+```bash
+git clone https://github.com/codingNR29/EN3563-Robot-arm.git .
+```
+
+### Step 4: Install Dependencies
+
+```bash
+cd ~/ros2_ws
+sudo rosdep init 2>/dev/null || true
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+### Step 5: Build the Workspace
+
+```bash
+cd ~/ros2_ws
+colcon build --symlink-install
+```
+
+### Step 6: Source the Environment
+
+```bash
+source ~/ros2_ws/install/setup.bash
+```
+
+> 💡 **Pro-tip**: Add this to your `~/.bashrc` so it runs automatically in every new terminal:
+> ```bash
+> echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
+> source ~/.bashrc
+> ```
+
+---
+
+## 🚀 How to Run the Project
+
+### 1. Visualizing in RViz2
+
+Interactively drag joint sliders to explore the robot's range of motion:
+
+```bash
+ros2 launch gp7_description display.launch.py
+```
+
+Opens `robot_state_publisher` + Joint State Publisher GUI + RViz2.
+
+---
+
+### 2. Simulating in Gazebo Sim
+
+Launch the full physics simulation with controllers:
+
+```bash
+ros2 launch gp7_gazebo gazebo.launch.py
+```
+
+**What happens:**
+1. Gazebo Sim opens with an empty world.
+2. The GP7 robot spawns — **fixed to the ground** via a world anchor joint.
+3. After ~20 seconds, three controllers activate in sequence:
+   - ✅ `joint_state_broadcaster` → publishes `/joint_states`
+   - ✅ `arm_controller` → accepts trajectory goals
+   - ✅ `gripper_controller` → accepts gripper position commands
+
+> ⚠️ **Important**: Wait until you see all three `Activated ...` messages in the terminal before running controller nodes. If activation fails, see [Troubleshooting](#-troubleshooting--common-issues).
+
+---
+
+### 3. Controlling the Robot via Code
+
+#### Option A — Gazebo + Controller nodes separately (recommended for development)
+
+**Terminal 1** — Launch Gazebo, wait for all 3 controllers to activate:
+```bash
+ros2 launch gp7_gazebo gazebo.launch.py
+```
+
+**Terminal 2** — Run the arm controller node, wait for the ready message:
+```bash
+ros2 run gp7_ros2_pkg arm_controller_node
+# Wait for: ✅ /joint_states received — arm controller is ready for goals.
+```
+
+**Terminal 3** — Send movement commands:
+```bash
+# Move to preset position (0=home, 1=reach_out, 2=compact, 3=wave)
+ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 1}" --once
+```
+
+**Terminal 4** — Control the gripper:
+```bash
+ros2 run gp7_ros2_pkg gripper_controller_node
+# Then in another terminal:
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: -0.5}" --once
+```
+
+#### Option B — Automated demo (no manual input)
+
+```bash
+# Terminal 1: Gazebo
+ros2 launch gp7_gazebo gazebo.launch.py
+
+# Terminal 2: Auto-demo (home → reach → gripper → compact → home)
+ros2 run gp7_ros2_pkg demo_sequence_node
+```
+
+### 4. Running the Pick and Place Task
+
+To launch the complete pick-and-place sequence:
+
+```bash
+cd /home/banula/ros2_ws/src
+unset AMENT_PREFIX_PATH
+source /opt/ros/jazzy/setup.bash
+source install/local_setup.bash
+export ROS_DOMAIN_ID=87
+export GZ_PARTITION=gp7_pick_place
+ros2 launch gp7_ros2_pkg pick_place.launch.py
 ```
 
 ---
 
-## 🚀 Current Development Status
+## 🧩 Adding Your Own Movements
 
-| Development Stage          |   Status   |
-| -------------------------- | :--------: |
-| Project planning           |      ✅     |
-| CAD model preparation      |      ✅     |
-| Robot link identification  |      ✅     |
-| Joint identification       |      ✅     |
-| URDF generation            |      ✅     |
-| URDF cleanup               |      ✅     |
-| Robot visualization        |     🚧     |
-| Gazebo simulation          |     🚧     |
-| Joint control              |      ⏳     |
-| Gripper design             |      ⏳     |
-| D-H parameter derivation   |      ⏳     |
-| Forward kinematics         |      ⏳     |
-| Inverse kinematics         |      ⏳     |
-| Trajectory planning        |      ⏳     |
-| Velocity control           |      ⏳     |
-| Pick-and-place execution   |      ⏳     |
-| Physical robot development | 🔬 Planned |
+All arm presets live in `gp7_ros2_pkg/scripts/arm_controller_node.py`. You can add new motions in **two steps**.
 
----
+### Step 1 — Know your joint order and limits
 
-## 🗺️ Project Roadmap
+The arm has **6 joints**, always listed in this order:
 
-```text
-✅ Define Project Requirements
-        │
-        ▼
-✅ Prepare Robot CAD
-        │
-        ▼
-✅ Define Links & Joints
-        │
-        ▼
-✅ Generate URDF
-        │
-        ▼
-🚧 Verify Robot Model
-        │
-        ▼
-⬜ Gazebo Simulation
-        │
-        ▼
-⬜ Joint Control
-        │
-        ▼
-⬜ Coordinate Frames
-        │
-        ▼
-⬜ D-H Parameters
-        │
-        ▼
-⬜ Forward Kinematics
-        │
-        ▼
-⬜ Inverse Kinematics
-        │
-        ▼
-⬜ Trajectory Planning
-        │
-        ▼
-⬜ Velocity Control
-        │
-        ▼
-⬜ Orientation Control
-        │
-        ▼
-⬜ Pick & Place
-        │
-        ▼
-⬜ Physical Prototype
+| # | Joint Name | Axis | Approx. Limit |
+| :-: | :--- | :--- | :--- |
+| 1 | `joint_1_s` | Base rotation | ±170° (~±2.97 rad) |
+| 2 | `joint_2_l` | Lower arm pitch | −65° to +155° |
+| 3 | `joint_3_u` | Upper arm pitch | −170° to +190° |
+| 4 | `joint_4_r` | Wrist roll | ±190° (~±3.32 rad) |
+| 5 | `joint_5_b` | Wrist pitch | ±135° (~±2.36 rad) |
+| 6 | `joint_6_t` | Tool roll | ±360° (~±6.28 rad) |
+
+All values are in **radians**.
+
+### Step 2 — Add a preset to `arm_controller_node.py`
+
+Open [`gp7_ros2_pkg/scripts/arm_controller_node.py`](file:///home/banula/ros2_ws/src/gp7_ros2/gp7_ros2_pkg/scripts/arm_controller_node.py) and find the `PRESETS` dictionary. Add a new entry:
+
+```python
+PRESETS = {
+    0: { 'name': 'home', 'waypoints': [([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 3.0)] },
+    1: { 'name': 'reach_out', ... },
+    2: { 'name': 'compact',   ... },
+    3: { 'name': 'wave',      ... },
+
+    # ✅ ADD YOUR OWN PRESET HERE:
+    4: {
+        'name': 'my_pose',
+        'waypoints': [
+            # ( [j1_s, j2_l, j3_u, j4_r, j5_b, j6_t], time_seconds )
+            ([0.0, 0.3, 0.5, 0.0, 0.0, 0.0], 2.0),   # intermediate
+            ([0.5, 0.8, 1.0, 0.3, 0.5, 0.0], 5.0),   # final pose
+        ],
+    },
+}
+```
+
+**Waypoints explained:**
+- Each waypoint is a `(positions, time)` tuple.
+- `positions` = list of 6 joint angles **in radians**, matching the joint order above.
+- `time` = seconds from trajectory start when this waypoint should be reached.
+- The controller computes a **smooth spline** between waypoints — no need to specify velocities.
+- Add as many intermediate waypoints as you need for a smooth, complex path.
+
+Then trigger it:
+```bash
+ros2 topic pub /gp7/goal_index std_msgs/msg/Int32 "{data: 4}" --once
+```
+
+> 💡 No rebuild needed — the node uses `--symlink-install` so edits to the script take effect immediately on next run.
+
+### Gripper Commands
+
+The gripper is controlled separately via a float value:
+
+```bash
+# Open gripper
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: 0.15}" --once
+
+# Close gripper
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: -0.5}" --once
+
+# Neutral
+ros2 topic pub /gp7/gripper_cmd std_msgs/msg/Float64 "{data: 0.0}" --once
+```
+
+### Sending raw trajectories directly (bypassing the node)
+
+You can also send a trajectory goal directly via the ROS 2 action CLI — useful for one-off testing without editing code:
+
+```bash
+ros2 action send_goal /arm_controller/follow_joint_trajectory \
+  control_msgs/action/FollowJointTrajectory \
+  "{trajectory: {
+      joint_names: [joint_1_s, joint_2_l, joint_3_u, joint_4_r, joint_5_b, joint_6_t],
+      points: [
+        {positions: [0.0, 0.5, 0.8, 0.0, 0.3, 0.0],
+         time_from_start: {sec: 3, nanosec: 0}}
+      ]
+  }}"
 ```
 
 ---
 
-## 📸 Project Media
+## 🦾 Robot Kinematics & Controllers
 
-### Robot Model
+### 6-DOF Arm Joints
 
-<p align="center">
-  <i>Robot model screenshot will be added here.</i>
-</p>
+| Joint Name | Type | Description |
+| :--- | :--- | :--- |
+| `joint_1_s` | Revolute | Base Rotation (S-axis) |
+| `joint_2_l` | Revolute | Lower Arm Pitch (L-axis) |
+| `joint_3_u` | Revolute | Upper Arm Pitch (U-axis) |
+| `joint_4_r` | Revolute | Wrist Roll (R-axis) |
+| `joint_5_b` | Revolute | Wrist Pitch (B-axis) |
+| `joint_6_t` | Revolute | Tool Flange Roll (T-axis) |
 
-<!--
-<p align="center">
-  <img src="media/images/robot_model.png" width="750">
-</p>
--->
+### Adaptive Gripper
 
----
+The gripper has **one actuated joint** (`gripper_controller`) and **5 mimic joints** that follow it automatically via Gazebo's mimic constraint.
 
-### Simulation
+### Active ROS 2 Controllers
 
-<p align="center">
-  <i>Simulation screenshot will be added here.</i>
-</p>
-
-<!--
-<p align="center">
-  <img src="media/images/simulation.png" width="750">
-</p>
--->
+| Controller | Type | Topic / Action |
+| :--- | :--- | :--- |
+| `joint_state_broadcaster` | JointStateBroadcaster | `/joint_states` |
+| `arm_controller` | JointTrajectoryController | `/arm_controller/follow_joint_trajectory` |
+| `gripper_controller` | JointGroupPositionController | `/gripper_controller/commands` |
 
 ---
 
-### Physical Prototype
+## ❓ Troubleshooting & Common Issues
 
-<p align="center">
-  <i>Physical robot images will be added here if hardware implementation is completed.</i>
-</p>
+#### Controllers fail to activate (`Failed to activate controller`)
 
----
+- **Cause A — YAML path not found**: The `gz_ros2_control` plugin couldn't load the controllers YAML. The URDF must contain an **absolute path** — `$(find ...)` syntax is not supported by Gazebo Sim.
+- **Cause B — Mimic joints in ros2_control**: Mimic joints have no command interfaces in Gazebo Sim. Only the primary actuated joint should appear in the `<ros2_control>` section.
+- **Fix**: Both issues are already resolved in this repo. If you re-clone and get this error, ensure you ran `colcon build --symlink-install` and the YAML path in `gp7.urdf` matches your install path.
 
-### Pick-and-Place Demonstration
+#### Goal rejected by controller
 
-<p align="center">
-  <i>Final GIF / video will be added here.</i>
-</p>
+- **Cause**: The arm controller received a goal before joint states were published (hardware state = NaN).
+- **Fix**: The `arm_controller_node` waits for `/joint_states` before accepting any goal. Look for the `✅ /joint_states received` log line before sending goals.
 
----
+#### Robot falls through the ground or floats
 
-## 🎥 Demonstration
+- **Cause**: No world→base fixed joint in the URDF.
+- **Fix**: The URDF now includes `<link name="world"/>` and `<joint name="world_to_base" type="fixed">` anchoring `base_link` to the world frame.
 
-The final demonstration will show:
+#### Meshes invisible in Gazebo / RViz2
 
-* robot initialization
-* movement toward the object
-* object grasping
-* smooth transportation
-* upright orientation preservation
-* placement at the destination
-* return or retreat motion
+- **Cause**: `GZ_SIM_RESOURCE_PATH` not set or workspace not sourced.
+- **Fix**: Always run `source ~/ros2_ws/install/setup.bash` before launching. The launch file also sets `GZ_SIM_RESOURCE_PATH` automatically.
 
----
+#### `Package not found` errors
 
-## 🧪 Future Improvements
-
-Potential extensions include:
-
-* Computer vision
-* Automatic object detection
-* Camera-based object localisation
-* Collision avoidance
-* Workspace optimisation
-* Improved gripper design
-* S-curve trajectory generation
-* Feedback control
-* Physical joint encoders
-* Wireless robot control
-* Mobile or web-based control interface
+```bash
+cd ~/ros2_ws && colcon build --symlink-install
+source ~/ros2_ws/install/setup.bash
+```
 
 ---
 
-## 📚 Academic Scope
+## 📜 License
 
-This project is developed for:
-
-**EN3563 – Robotics**
-**Mini Project: Implementation of a Robot Arm**
-
-Key concepts covered include:
-
-* Serial-link manipulators
-* Degrees of freedom
-* Coordinate systems
-* Denavit-Hartenberg modelling
-* Forward kinematics
-* Inverse kinematics
-* Robot workspace
-* Trajectory generation
-* Velocity control
-* Orientation control
-* Robot simulation
-* Robotic manipulation
-
----
-
-## 👥 Team
-
-| Member   | Index Number |
-| -------- | ------------ |
-| Member 1 | `XX_ENG_XXX` |
-| Member 2 | `XX_ENG_XXX` |
-| Member 3 | `XX_ENG_XXX` |
-
----
-
-## 📖 References
-
-* ROS 2 Documentation
-* Gazebo Documentation
-* Robotics course material
-* CAD and mechanical-design references
-* Robot actuator and controller documentation
-
----
-
-<div align="center">
-
-## ⭐ Project Goal
-
-**Develop a complete robotic-arm system capable of smooth, controlled and orientation-preserving pick-and-place manipulation.**
-
-<br>
-
-`Mechanical Design` • `Kinematics` • `ROS 2` • `Simulation` • `Control` • `3D Printing`
-
-<br>
-
-### 🤖 EN3563 Robotics
-
-</div>
+This project is licensed under the BSD-3-Clause License. See individual package `package.xml` files for details.
