@@ -9,11 +9,15 @@ GP7 model with an adaptive two-finger gripper.
 The [task sheet](Task_sheet.pdf) asks for a robot with at least four degrees of
 freedom, labeled coordinate frames, a DH table, forward and inverse kinematics,
 and a pick-and-place task with unchanged object orientation and smooth motion.
-Submission also requires a report and a demonstration video.
+It specifies Box A at (1, 1, 0), which is outside this robot's reachable
+workspace from the origin. Existing project notes report that the lecturer
+permits any reachable Box A position; confirm that permission for the report.
+The current reachable scene uses the coordinates below and does not meet the
+printed (1, 1, 0) requirement. Submission also requires a report and a
+demonstration video.
 
-The lecturer explicitly permits Box A to be placed at any reachable location.
-This implementation uses the scene below instead of the task sheet's original
-Box A position at (1, 1, 0). Positions are in metres, in the world/base frame.
+The current implementation uses the alternate reachable scene below.
+Positions are in metres, in the world/base frame.
 
 | Item | Setting |
 | --- | --- |
