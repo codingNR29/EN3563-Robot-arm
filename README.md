@@ -2,7 +2,7 @@
 
 > **Assignment pick-and-place:** See [run instructions, implementation and validation](gp7_ros2/PICK_PLACE.md).
 
-# Yaskawa Motoman GP7 Robot Arm — ROS 2 Project
+# Yaskawa Motoman GP7 Robot Arm — ROS 2 Project - EN3563
 
 Welcome to the **Yaskawa Motoman GP7 Robot Arm** ROS 2 repository! This project provides complete ROS 2 integration for the 6-axis Yaskawa Motoman GP7 industrial robotic arm equipped with an adaptive 2-finger gripper. It includes URDF kinematic models, mesh representations, RViz2 visualization, Gazebo Sim physics simulation powered by `gz_ros2_control`, and Python controller nodes for commanding the robot via code.
 
