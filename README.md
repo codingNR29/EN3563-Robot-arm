@@ -47,6 +47,10 @@ numerical roundoff. The report draft and labeled frame drawing are in
 [docs/report.md](docs/report.md) and [docs/coordinate_frames.svg](docs/coordinate_frames.svg).
 A video recording, physical grasp reliability, and equivalence to the original
 CAD have not been verified. See [results and remaining work](docs/validation.md).
+Presentation preparation is tracked in
+[docs/presentation_readiness.md](docs/presentation_readiness.md). The
+[comprehensive technical study guide](docs/technical_study_guide/README.md)
+includes editable Overleaf-compatible LaTeX sources and a ZIP archive.
 
 ## Files
 

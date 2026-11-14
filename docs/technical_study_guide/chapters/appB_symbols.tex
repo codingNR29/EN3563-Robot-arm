@@ -1,0 +1,31 @@
+\chapter{Notation and Units}
+\label{app:notation}
+
+\begin{longtable}{p{.22\textwidth}p{.70\textwidth}}
+\toprule Symbol & Meaning in this guide\\\midrule\endfirsthead
+\toprule Symbol & Meaning in this guide\\\midrule\endhead
+$\{B\}$ & Robot base frame; identity with the world frame in the task launch.\\
+$\{i\}$ & Standard-DH frame numbered $i$.\\
+$\{g\}$ & URDF grasp frame used as the end-effector/TCP point for kinematics.\\
+$\qvec=(q_1,\ldots,q_6)^T$ & Six arm joint coordinates in URDF joint order, radians.\\
+$a_i$ & Standard-DH common-normal distance along $x_i$, metres.\\
+$\alpha_i$ & Standard-DH twist about $x_i$, radians.\\
+$d_i$ & Standard-DH signed displacement along $z_{i-1}$, metres.\\
+$\theta_i$ & Standard-DH revolute angle, radians; for this robot $\theta_2=q_2-\pi/2$.\\
+$A_i={} ^{i-1}T_i$ & Homogeneous transform from DH frame $i$ into frame $i-1$.\\
+$T_{6g}$ & Fixed transform from DH frame 6 to URDF grasp frame.\\
+$R$ & Proper 3-by-3 rotation matrix in $\SO(3)$.\\
+$p$ & Three-dimensional position vector, metres unless stated otherwise.\\
+$r(q)$ & Six-component concatenated position and rotation-vector IK residual.\\
+$\operatorname{rotvec}(R)$ & Rotation vector whose direction is the rotation axis and norm is angle, radians.\\
+$s(u)$ & Quintic scalar interpolation blend, with normalized time $u=t/T$.\\
+$\lambda$ & Global segment time-stretch factor used to respect sampled speed cap.\\
+$e_p$ & Euclidean final position error, metres.\\
+$e_R$ & Relative-rotation geodesic angle, radians or degrees.\\
+\bottomrule
+\end{longtable}
+
+Use metres, seconds, radians, and radians per second consistently unless a
+table explicitly uses degrees or centimetres. The IK residual concatenates
+metres and radians without dimensional scaling; treat its norm as a numerical
+criterion, not a physical norm with one unit.

@@ -1,0 +1,29 @@
+\chapter{Verified DH Table and Matrix Quick Reference}
+\label{app:dh}
+
+\section{Parameters}
+\begin{center}
+\begin{tabular}{c l r r r l}
+\toprule $i$ & GP7 axis & $a_i$ (m) & $\alpha_i$ (rad) & $d_i$ (m) & $\theta_i$ (rad)\\\midrule
+1&S&0.040&$-\pi/2$&0.330&$q_1$\\
+2&L&0.445&$\pi$&0&$q_2-\pi/2$\\
+3&U&0.040&$-\pi/2$&0&$q_3$\\
+4&R&0&$\pi/2$&-0.440&$q_4$\\
+5&B&0&$-\pi/2$&0&$q_5$\\
+6&T&0&0&0&$q_6$\\\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Matrix substitution}
+Use $c_i=\cos q_i$, $s_i=\sin q_i$, and $v_2=q_2-\pi/2$:
+\begin{align*}
+A_1&=\begin{bmatrix}c_1&0&-s_1&.040c_1\\s_1&0&c_1&.040s_1\\0&-1&0&.330\\0&0&0&1\end{bmatrix},\\
+A_2&=\begin{bmatrix}\cos v_2&\sin v_2&0&.445\cos v_2\\\sin v_2&-\cos v_2&0&.445\sin v_2\\0&0&-1&0\\0&0&0&1\end{bmatrix},\\
+A_3&=\begin{bmatrix}c_3&0&-s_3&.040c_3\\s_3&0&c_3&.040s_3\\0&-1&0&0\\0&0&0&1\end{bmatrix},\\
+A_4&=\begin{bmatrix}c_4&0&s_4&0\\s_4&0&-c_4&0\\0&1&0&-.440\\0&0&0&1\end{bmatrix},\\
+A_5&=\begin{bmatrix}c_5&0&-s_5&0\\s_5&0&c_5&0\\0&-1&0&0\\0&0&0&1\end{bmatrix},\\
+A_6&=\begin{bmatrix}c_6&-s_6&0&0\\s_6&c_6&0&0\\0&0&1&0\\0&0&0&1\end{bmatrix}.
+\end{align*}
+The grasp pose is $T_{base,grasp}=A_1A_2A_3A_4A_5A_6T_{6,grasp}$. Use the
+exact fixed URDF RPY values when reproducing the checker; the displayed tool
+matrix is rounded.

@@ -1,0 +1,132 @@
+\chapter{Complete Repository Architecture}
+\label{ch:architecture}
+
+\section{Repository map}
+The following tree emphasizes files that affect modeling, build, launch,
+execution, validation, and handoff. CAD part files and mesh contents are
+preserved as assets but do not execute in the task node.
+
+\begin{lstlisting}[caption={Significant project paths in the authoritative checkout.}]
+Robo_Arm/
+|-- Task_sheet.pdf
+|-- README.md
+|-- docs/
+|   |-- setup.md, kinematics.md, validation.md, report.md
+|   |-- coordinate_frames.svg, verify_dh.py
+|   `-- technical_study_guide/       (this editable LaTeX project)
+|-- GP7 (Solidworks 2020)/           (original CAD, STEP, and two URDF exports)
+|-- Temporary 3D model parts/        (legacy STEP inputs)
+|-- gp7_ros2/
+|   |-- PICK_PLACE.md, run_pick_place.sh
+|   |-- gp7_description/
+|   |   |-- urdf/gp7.urdf
+|   |   |-- meshes/gp7/{visual,collision}/*.stl
+|   |   |-- meshes/adaptive_gripper/visual/*.dae
+|   |   |-- launch/display.launch.py
+|   |   `-- rviz/display.rviz
+|   |-- gp7_gazebo/
+|   |   |-- worlds/pick_place.sdf
+|   |   |-- config/ros2_controllers.yaml
+|   |   `-- launch/gazebo.launch.py
+|   `-- gp7_ros2_pkg/
+|       |-- gp7_motion/{kinematics,reach,model}.py
+|       |-- scripts/{pick_place,arm_controller,gripper_controller,
+|       |            demo_sequence}_node.py
+|       |-- launch/{pick_place,gp7_sim_control}.launch.py
+|       `-- test/test_kinematics.py
+`-- kill_sim.sh                    (broad force-kill helper; use cautiously)
+\end{lstlisting}
+
+\section{File-by-file execution and data roles}
+\small
+\begin{longtable}{p{.28\textwidth}p{.17\textwidth}p{.49\textwidth}}
+\caption{Important files, how they are used, and their workflow connections.}\label{tab:file-reference}\\
+\toprule Exact path & Loaded / run as & Purpose, inputs/outputs, and dependencies\\\midrule\endfirsthead
+\toprule Exact path & Loaded / run as & Purpose, inputs/outputs, and dependencies\\\midrule\endhead
+\file{Task_sheet.pdf} & Human reference & Original requirements; not loaded by code. Provides object sizes, coordinates, frame/DH/FK/IK tasks, and deliverables.\\
+\file{README.md} & Human reference & Main setup, launch, position and limitation summary. References implementation and validation docs.\\
+\file{docs/setup.md} & Human setup guide & Dependency, build, transport binding, environment, and middleware troubleshooting commands.\\
+\file{docs/kinematics.md} & Human math reference & Standard DH frame assignment and independent derivation; runtime code does not import this document.\\
+\file{docs/verify_dh.py} & Direct executable check & Independently defines DH table/matrix, reads URDF, compares 4 named and 100 seeded configurations, raises on mismatch.\\
+\file{docs/validation.md} & Human test record & Stores date/context/results of prior builds, tests, GUI/headless runs, errors, and limitations; no runtime import.\\
+\file{GP7 (Solidworks 2020)/} & CAD assets & SolidWorks parts/assembly and STEP geometry, used as retained project inputs; task runtime loads neither SolidWorks nor STEP.\\
+\file{GP7 (Solidworks 2020)/GP7 components/GP7/GP7.urdf} & Inactive CAD export & Separate CAD-generated URDF; not the authoritative task description.\\
+\file{GP7 (Solidworks 2020)/URDF/Build/Build.urdf} & Inactive CAD export & Another URDF export with its own meshes; do not substitute for simulation URDF without validation.\\
+\file{Temporary 3D model parts/} & Legacy CAD assets & Four STEP files retained as project input; no runtime reference found.\\
+\file{gp7_ros2/gp7_description/urdf/gp7.urdf} & Parsed by ROS/Gazebo & Authoritative link/joint tree, visuals, collisions, limits, inertials, mimic relations, ros2\_control interfaces, Gazebo plugin.\\
+\file{gp7_ros2/gp7_description/meshes/gp7/visual/*.stl} & URDF visual asset & Seven arm/base visual meshes at scale 1; presentation geometry.\\
+\file{gp7_ros2/gp7_description/meshes/gp7/collision/*.stl} & URDF collision asset & Seven simplified/mesh collision geometries used by the simulator.\\
+\file{gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/*.dae} & URDF mesh asset & Seven gripper visual meshes. In the current source the same DAE names are also used for gripper collision geometry; task adaptation scales both 1.5.\\
+\file{gp7_ros2/gp7_description/launch/display.launch.py} & ROS launch & Reads a URDF path via shell \code{cat}, starts joint-state publisher GUI, robot-state publisher, RViz. Display-only; no Gazebo control.\\
+\file{gp7_ros2/gp7_description/rviz/display.rviz} & RViz config & Selects display panels, fixed frame, robot model, and visualization settings for the display launch.\\
+\file{gp7_ros2/gp7_gazebo/worlds/pick_place.sdf} & Parsed by Gazebo & Physics, gravity, ground, fixed Box A, dynamic Box B, light, and Box B pose-publisher system. Launch code edits Box B initial pose in a temporary copy.\\
+\file{gp7_ros2/gp7_gazebo/config/ros2_controllers.yaml} & Loaded by controller manager & Update rate, joint-state broadcaster, six-joint arm trajectory controller, and one-joint gripper position controller.\\
+\file{gp7_ros2/gp7_gazebo/launch/gazebo.launch.py} & Optional ROS launch & General Gazebo launch; resolves resource paths, bridge clock, publishes robot description, spawns robot and orders controller spawners.\\
+\file{gp7_ros2/gp7_ros2_pkg/gp7_motion/kinematics.py} & Imported by task/launch & \code{Kinematics}: parses serial URDF chain, computes FK, bounded numeric IK, sampled Cartesian segment, and quintic joint segment. Inputs URDF text/poses; outputs transforms, joint samples, velocities.\\
+\file{gp7_ros2/gp7_ros2_pkg/gp7_motion/reach.py} & Imported by task launch & \code{farthest_ground_pickup} runs constrained SLSQP optimization; \code{carry_waypoints} generates scene-specific upright carry points and durations.\\
+\file{gp7_ros2/gp7_ros2_pkg/gp7_motion/model.py} & Imported by task launch & \code{task_description} appends Gazebo detachable-joint XML and replaces package/controller paths. Its return is used for spawning and robot-state publisher.\\
+\file{gp7_ros2/gp7_ros2_pkg/launch/pick_place.launch.py} & Primary task launch & Samples pickup, edits SDF copy, constructs task URDF, starts Gazebo, /clock bridge, robot-state publisher, spawn, three controllers, then optional task node. Args: headless, run\_task, pickup\_mode, seed.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/pick_place_node.py} & Launched executable & \code{PickPlace}: monitors joint/box/grasp state, preflights IK paths, commands fingers and arm action, attaches/releases object, validates final pose.\\
+\file{gp7_ros2/gp7_ros2_pkg/launch/gp7_sim_control.launch.py} & Manual-control launch & Includes generic Gazebo launch and starts manual arm/gripper nodes after an 8 s delay. Does not run assignment task node.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/arm_controller_node.py} & Installed manual node & Subscribes to preset index, stop, and joint states; sends named-joint trajectory action goals; distinct from task planner.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/gripper_controller_node.py} & Installed manual node & Maps simple Float64 command to gripper position-controller Float64MultiArray; enforces [-0.5,0.15] rad.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/demo_sequence_node.py} & Installed manual demo & Plays home/reach/open/close/open/home presets; documentation explicitly says it is not the assignment pick-and-place task.\\
+\file{gp7_ros2/gp7_ros2_pkg/test/test_kinematics.py} & unittest discovery & Six offline tests of FK, dimensions, path interpolation, bounds/speeds/orientation, adaptive gripper, and unreachable target. Does not start ROS or Gazebo.\\
+\file{gp7_ros2/run_pick_place.sh} & Shell helper & Sources ROS and install overlay and sets default ROS domain/partition. Clears PYTHONPATH, so does not carry custom Transport bindings.\\
+\file{kill_sim.sh} & Shell helper, avoid casual use & Uses broad \code{pkill -9} patterns against Gazebo and ROS process names; can terminate unrelated sessions and is not a graceful ROS stop mechanism.\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Build/install manifests}
+Each package has \file{package.xml} and \file{CMakeLists.txt}. Description
+installs \code{urdf}, \code{meshes}, \code{launch}, and \code{rviz}. Gazebo
+installs its launch, config, and world folders. The Python package installs
+\code{gp7_motion} and executables. The task script is installed once renamed
+to \code{pick_place_node}, and the CMake file also includes it in a general
+install block; the guide documents the built installed executable name rather
+than assuming a source filename is invoked directly. Package manifests list
+dependencies, including Xacro, but no \code{.xacro} source exists in the
+checkout and the primary task reads \code{gp7.urdf} directly.
+
+\section{Top-level task dataflow}
+\begin{figure}[htbp]
+\centering\resizebox{\textwidth}{!}{\input{figures/architecture.tex}}
+\caption{Actual task-side processes and data paths. The clock is explicitly
+bridged; model pose and grasp feedback use Gazebo Transport in the task node.}
+\label{fig:architecture}
+\end{figure}
+
+\section{Execution from launch command to placed object}
+At launch, ROS resolves the installed package-share paths. The launch file
+reads the configured mode and seed, computes or samples a Box B pickup, writes
+that position into a temporary SDF world, reads the GP7 URDF, calls
+\code{task_description}, and starts Gazebo with the generated world. The same
+task URDF is sent to robot-state publisher and the Gazebo create node. The
+launch starts the broadcaster, arm controller, and gripper controller;
+\code{pick_place_node} is launched only when the spawner process exits
+successfully and \code{run_task} is true.
+
+The node waits for nonzero simulation clock, a complete arm \code{/joint_states}
+message, Box B pose, and the arm action server. It asks for an initial detach
+confirmation because the Gazebo plugin begins attached. It checks pickup pose
+and upright orientation, computes the approach IK, and builds every Cartesian
+segment before moving. It then opens, approaches, descends, checks grasp-frame
+error, closes, attaches, transfers while monitoring feedback, checks
+pre-release placement, detaches, opens, retreats, waits for settling, and
+checks final translation and orientation before emitting success. Chapter 12
+walks through each operation at code level.
+
+\section{Input/output contracts}
+The principal computational pipeline is
+\begin{equation}
+ (\text{URDF},\ \text{pickup},\ \text{destination})
+ \longrightarrow \text{target Cartesian waypoints}
+ \longrightarrow (t_k,\qvec_k,\dot{\qvec}_k)
+ \longrightarrow \texttt{FollowJointTrajectory}
+ \longrightarrow \text{joint / box / grasp feedback}.
+\end{equation}
+The trajectory does not bypass the controller manager; the task serializes
+sampled arrays into ROS trajectory points and sends them through the action
+interface. Gazebo Transport feedback closes the monitoring loop for the box
+and detachable-joint state.

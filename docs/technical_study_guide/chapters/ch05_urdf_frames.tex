@@ -1,0 +1,114 @@
+\chapter{URDF, Robot Modeling, and Coordinate Frames}
+\label{ch:urdf}
+
+\section{The source is URDF, not Xacro}
+The runtime model is the plain XML file
+\file{gp7_ros2/gp7_description/urdf/gp7.urdf}. Although the Gazebo package
+manifest declares an Xacro dependency, no Xacro file is present and the task
+launch does not invoke Xacro. Instead, Python parses and edits XML text before
+passing the expanded description to Gazebo and robot-state publisher. This is
+an important repository-specific distinction.
+
+\section{Link and joint semantics}
+A URDF \code{link} is a rigid body with optional visual geometry, collision
+geometry, and inertial properties. A URDF \code{joint} connects one parent
+link to one child link. Its \code{origin} is the pose of the joint frame
+relative to the parent link; its \code{axis} is expressed in the joint frame.
+For a revolute joint, the scalar joint position rotates the child-side chain
+about that axis. Fixed joints preserve a transform but add no degree of
+freedom. The \code{Kinematics} parser follows parent/child links from
+\code{base_link} to \code{grasp_frame}; at each joint it applies the fixed
+origin and then the revolute rotation.
+
+The authoritative chain includes the six arm revolute joints, a fixed flange,
+fixed tool0, fixed gripper base, one driver and five mimic finger joints, and a
+fixed grasp frame. The extra \code{base} link is fixed to \code{base_link} at
+z=\SI{0.33}{m}; it is not another actuated joint. The world-to-base transform
+is identity.
+
+\section{Visual, collision, and inertial models}
+Each GP7 arm link references separate visual and collision STL files. The
+visual files preserve appearance; collision geometry determines contact and
+may be lower detail. The seven adaptive gripper DAE files are referenced for
+visuals and, in this URDF, the same DAE path also appears in collision tags.
+The working URDF uses scale 1.5 for the gripper meshes while leaving arm
+meshes at scale 1; this is a project model adaptation. The environment includes
+a 20 m square plane. Box A is a
+static collision/visual box of size $(0.30,0.30,0.20)$ m. Box B is a dynamic
+$(0.05)^3$ m cube with mass \SI{0.05}{kg}.
+
+The URDF gives every modeled robot link a mass of \SI{1}{kg} and diagonal
+inertia entries of $0.01$ with zero products of inertia. These are repeated
+placeholder-like values, not validated CAD mass properties. They can permit
+simulation but should not be presented as an identified physical inertia
+model. Box B has diagonal inertia entries $2.08333\times10^{-5}$ kg m$^2$,
+consistent with a uniform cube using its stated mass and dimensions. Box A is
+static and does not need a dynamic inertial model for this task.
+
+\section{TF tree and time-varying transforms}
+\code{robot_state_publisher} consumes the URDF and joint-state messages and
+publishes transforms for the link tree. Fixed joint transforms do not change;
+the six arm and active gripper joint transforms depend on current joint
+positions. In a conventional TF tree, each child has one parent, matching the
+URDF chain. Gazebo's object model pose is not automatically the same stream as
+the robot's TF transform: this task separately subscribes to the Gazebo
+Transport pose vector for \code{box_b}.
+
+The fixed identity transform from \code{world} to \code{base_link} aligns
+the planning base with the simulation world. This is why the world-coordinate
+Box A target can be passed to the URDF-based FK/IK without an additional
+world/base calibration transform. That assumption would have to be changed if
+the robot were spawned at a nonidentity pose.
+
+\section{Actual zero-pose DH geometry}
+The DH frames are deliberately not identified with all URDF link frames. At
+zero joint angles, the documented frame origins in base coordinates are
+\begin{align*}
+ o_0&=(0,0,0), &o_1&=(0.040,0,0.330),\\
+ o_2&=(0.040,0,0.775), &o_3&=(0.040,0,0.815),\\
+ o_4&=o_5=o_6=(0.480,0,0.815)\quad\text{(m)}.
+\end{align*}
+Frame 3 lies at the intersection of the extended elbow axis and wrist axes,
+not at the URDF \code{link_4_r} origin. The coincident wrist-frame origins
+reflect intersecting wrist axes. The terminal DH frame 6 is still distinct
+from the tool0/grasp frame.
+
+\begin{figure}[htbp]
+\centering\input{figures/dh_frames.tex}
+\caption{Standard-DH origin schematic projected into base X--Z. All pictured
+origins lie at $y=0$ at home. Out-of-plane axis signs and origin coordinates
+are annotated. The diagram is a kinematic construction, not a mesh rendering.}
+\label{fig:dh-frames}
+\end{figure}
+
+\section{URDF fixed transforms near the tool}
+Three fixed transforms matter in the DH-to-runtime comparison:
+\begin{enumerate}
+ \item \code{joint_6_t-flange}: $p=(0.080,0,0)$ m, zero RPY.
+ \item \code{flange-tool0}: $p=(0,0,0)$ and RPY
+ $(3.14159265,-1.57079632,0)$ rad.
+ \item \code{tool0_to_grasp_frame}: $p=(-0.0009111,0.0123,0.14598)$ m,
+ zero RPY.
+\end{enumerate}
+Replacing the decimal RPY angles by exact $\pi$ values is a convenient
+derivation approximation but slightly changes the transform. The verification
+script reads the exact URDF values.
+
+\section{ros2\_control model embedded in URDF}
+The URDF's \code{ros2_control} element declares a \code{GazeboSystem} with
+\code{gz_ros2_control/GazeboSimSystem}. Each arm joint and the gripper
+driver has a position command interface and position/velocity state
+interfaces. The five mimic joints expose state interfaces but no command
+interfaces. The external plugin loads the controller manager inside the
+simulator and connects these abstract interfaces to Gazebo joint state and
+command components. The project YAML chooses the actual controller instances.
+
+\section{CAD exports versus runtime model}
+The repository contains at least two CAD-exported GP7 URDFs in addition to the
+runtime file: \file{GP7 (Solidworks 2020)/GP7 components/GP7/GP7.urdf} and
+\file{GP7 (Solidworks 2020)/URDF/Build/Build.urdf}. They have distinct tree,
+path, and mesh context and are not silently interchangeable. The task launch,
+DH verification, and regression tests all target
+\file{gp7_ros2/gp7_description/urdf/gp7.urdf}. A separate CAD-fidelity study
+would need to compare origins, scaling, joint axes, and mesh coordinate frames
+before claiming equivalence.

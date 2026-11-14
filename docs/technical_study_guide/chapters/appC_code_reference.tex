@@ -1,0 +1,99 @@
+\chapter{Important Code Excerpts and Function Reference}
+\label{app:code}
+
+\section{URDF-chain FK}
+Excerpt from \file{gp7_ros2/gp7_ros2_pkg/gp7_motion/kinematics.py}:
+\begin{lstlisting}[language=Python,caption={The actual FK multiplication pattern.}]
+def fk(self, q):
+    result, index = np.eye(4), 0
+    for origin, axis in self.chain:
+        result = result @ origin
+        if axis is not None:
+            rotation = np.eye(4)
+            rotation[:3, :3] = Rotation.from_rotvec(axis * q[index]).as_matrix()
+            result = result @ rotation
+            index += 1
+    return result
+\end{lstlisting}
+The static URDF joint origin is composed first. Then the current revolute
+joint's axis-angle rotation is composed in that joint frame.
+
+\section{Bounded numerical IK}
+\begin{lstlisting}[language=Python,caption={Actual residual and solver acceptance.}]
+def residual(q):
+    pose = self.fk(q)
+    return np.r_[pose[:3, 3] - position,
+                 Rotation.from_matrix(rotation.T @ pose[:3, :3]).as_rotvec()]
+
+result = least_squares(
+    residual, np.clip(guess, self.lower + 1e-8, self.upper - 1e-8),
+    bounds=(self.lower, self.upper), max_nfev=150,
+    ftol=1e-10, xtol=1e-10, gtol=1e-10)
+if np.linalg.norm(residual(result.x)) < 1e-6:
+    return result.x
+\end{lstlisting}
+
+\section{Quintic Cartesian sample and velocity scaling}
+\begin{lstlisting}[language=Python,caption={Actual Cartesian segment core.}]
+u = t / duration
+blend = 10*u**3 - 15*u**4 + 6*u**5
+for s in blend:
+    seed = self.ik(pose[:3, 3] + s*(target-pose[:3, 3]), seed)
+    qs.append(seed)
+qs = np.array(qs)
+velocities = np.gradient(qs, t, axis=0)
+stretch = max(1., float(np.max(
+    np.abs(velocities) / np.minimum(self.speed, .5))))
+t *= stretch
+velocities /= stretch
+velocities[[0, -1]] = 0.
+\end{lstlisting}
+
+\section{Task-specific Gazebo plugin adaptation}
+From \file{gp7_ros2/gp7_ros2_pkg/gp7_motion/model.py}:
+\begin{lstlisting}[language=XML,caption={Object retention uses a Gazebo detachable joint.}]
+<plugin filename="gz-sim-detachable-joint-system"
+ name="gz::sim::systems::DetachableJoint">
+  <parent_link>link_6_t</parent_link>
+  <child_model>box_b</child_model><child_link>link</child_link>
+  <attach_topic>/gp7/grasp/attach</attach_topic>
+  <detach_topic>/gp7/grasp/detach</detach_topic>
+  <output_topic>/gp7/grasp/state</output_topic>
+</plugin>
+\end{lstlisting}
+
+\section{Task source touchpoints}
+\begin{longtable}{p{.29\textwidth}p{.24\textwidth}p{.43\textwidth}}
+\toprule File/function & Inputs & Outputs / behavior\\\midrule\endfirsthead
+\toprule File/function & Inputs & Outputs / behavior\\\midrule\endhead
+\code{Kinematics.__init__(urdf)} & URDF XML string & Chain origins/axes; lower/upper/speed arrays.\\
+\code{Kinematics.fk(q)} & Six arm positions & Base-to-grasp homogeneous matrix.\\
+\code{Kinematics.ik(position,seed,rotation,restart)} & Target position/orientation, seed & Bounded least-squares solution or \code{ValueError}.\\
+\code{Kinematics.segment(start,target,duration,dt)} & Current $q$, Cartesian endpoint & Time/joint/velocity arrays for fixed-orientation line.\\
+\code{Kinematics.joint_segment(start,target,duration)} & Two joint vectors & Quintic joint interpolation and analytic blend velocities.\\
+\code{farthest_ground_pickup(kin,margin)} & Kinematics object and margin & Optimized maximum radius plus 5 mm inset pickup by default.\\
+\code{carry_waypoints(pickup,destination)} & Center vectors & Above pose plus timed Cartesian waypoints, with extra far route.\\
+\code{task_description(source,share,controllers)} & URDF text and resolved paths & Robot description with detachable plugin and replaced resource paths.\\
+\code{setup(context)} in task launch & ROS launch substitutions & SDF/URDF, Gazebo process, state publisher, bridge, spawn, spawners and conditional task node.\\
+\code{PickPlace.joints(msg)} & \code{JointState} & Reorders arm positions, reads driver angle, stores freshness.\\
+\code{PickPlace.box_pose(msg)} & Gazebo \code{Pose_V} & Stores Box B position/quaternion and carried orientation samples.\\
+\code{PickPlace.fingers(target)} & Driver target in rad & Publishes quintic command stream and checks feedback.\\
+\code{PickPlace.switch_grasp(attached)} & Boolean desired state & Publishes Gazebo Empty attach/detach and waits for state string.\\
+\code{PickPlace.move(trajectory,label)} & $t,qs,vs$ and label & Sends action; checks result/joint feedback/carrying invariants.\\
+\code{PickPlace.run()} & Parameters and live feedback & Preflight, execute, release, settle, final checks and success report.\\
+\code{MotionTests.*} & Source model and helper functions & Six offline regression assertions.\\
+\bottomrule
+\end{longtable}
+
+\section{ROS controller configuration excerpt}
+\begin{lstlisting}[caption={Actual interface choices from ros2\_controllers.yaml.}]
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    gripper_controller:
+      type: position_controllers/JointGroupPositionController
+\end{lstlisting}

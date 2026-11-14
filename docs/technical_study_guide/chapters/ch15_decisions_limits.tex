@@ -1,0 +1,93 @@
+\chapter{Engineering Decisions and Limitations}
+\label{ch:decisions}
+
+\section{Why this architecture was selected}
+\begin{description}
+ \item[Use the supplied GP7 CAD-derived description.] This preserves the
+ assignment's industrial-robot model and lets the group focus on kinematics,
+ control, and task execution. The authoritative task URDF is explicit and
+ inspectable; separate CAD URDF exports remain archival inputs.
+ \item[Derive standard DH, execute URDF FK.] A conventional DH table supports
+ lecture-level frame and FK explanation. The runtime reads exact origins and
+ axes from URDF so it does not duplicate dimensions in control code. A
+ separate verifier independently checks the table against the URDF chain.
+ \item[Use bounded numerical IK.] SciPy's least-squares solver is concise and
+ consumes limits parsed from the model. Warm-starting supports waypoint
+ continuity, while restart seeds help find the first feasible approach. The
+ trade-off is no closed-form branch analysis and no collision constraints.
+ \item[Use quintic interpolation.] The scalar profile has rest-to-rest
+ endpoint velocity and acceleration and is straightforward to sample into a
+ ROS trajectory. The project applies a sampled velocity cap and stretches
+ time, but does not establish acceleration/jerk limits.
+ \item[Use ROS 2 control actions.] The controller manager, broadcaster, and
+ joint trajectory controller separate command generation from simulation
+ actuation. The task can await goal results, inspect feedback, and cancel.
+ \item[Use a simple adaptive gripper.] One commanded joint with mimic metadata
+ is simpler than six independent actuators and visually resembles the
+ supplied end-effector CAD. The selected Gazebo engine's unsupported mimic
+ constraint makes that design unverified dynamically.
+ \item[Use detachable-joint retention for task completion.] It guarantees a
+ repeatable simulated carry and lets the group validate sequencing and pose
+ bookkeeping. It bypasses the physical grasp mechanics, so it must be labeled
+ idealized rather than interpreted as force-closure performance.
+\end{description}
+
+\section{Reachability trade-off}
+The assignment sheet's Box A at $(1,1,0)$ m is outside the described reach.
+The simulation keeps a fixed reachable Box A at $(0.55,0.35,0)$ only under the
+lecturer's later verbal clarification. This discrepancy must be stated in
+presentations and submissions. Do not confuse the clarification with a
+written assignment amendment. Do not describe seeded Box B test coordinates
+as moving Box A.
+
+The far-mode maximum radius is an optimization subject to $z=0.025$ and fixed
+downward orientation, not an unrestricted reach sphere. Its exact boundary
+is a straight-elbow singularity. A 5 mm inward margin and complete route
+preflight reduce this modeled edge case, but do not quantify real-world
+tracking margin.
+
+\section{Numerical and modeling limits}
+\begin{itemize}
+ \item The IK residual mixes metres and radians with no unit weighting; solver
+ convergence may depend on scale and seed.
+ \item The solver has finite evaluations and can fail, especially at
+ singularities or on infeasible targets. Multiple restarts do not prove
+ completeness.
+ \item Path continuity uses a maximum adjacent joint displacement threshold;
+ no Jacobian conditioning check is computed.
+ \item The selected Cartesian path is straight in tool position with fixed
+ orientation. It is not a global collision-aware path.
+ \item The only trajectory bound beyond URDF speed is a sampled 0.5 rad/s
+ cap. Acceleration and jerk are neither bounded by code nor measured in the
+ validation evidence.
+ \item URDF mass and inertia values are repeated estimates. Mesh/collision
+ accuracy and CAD-to-URDF equivalence are not established.
+ \item Gripper mimic behavior is unsupported by the reported physics setup;
+ the fixed-joint plugin creates idealized object retention.
+ \item Pose feedback is sampled at 50 Hz. The reported orientation bound is
+ the maximum over received samples, not proof over every physics step.
+\end{itemize}
+
+\section{What a more physical system would require}
+An engineering route beyond the current proof-of-concept would include
+manufacturer-verified link inertias and calibration; collision geometry
+validation; support for mimic joints or independent finger control; contact
+friction and force models; grasp-force/current/sensor feedback; robust
+collision checking; joint trajectory logging; and systematic repeated runs
+with disturbances. A physical deployment additionally requires safety-rated
+limits, real hardware interfaces, emergency stop, workspace risk review, and
+commissioning; the project's \code{/gp7/stop} topic is not sufficient.
+
+\section{Implemented, inspected, and future categories}
+\begin{table}[htbp]
+\centering\small
+\caption{Evidence labels to use when explaining decisions.}\label{tab:evidence-levels}
+\begin{tabularx}{\textwidth}{p{.23\textwidth}X X}
+\toprule Category & Examples & Accurate wording\\\midrule
+Implemented and validated in recorded simulation & Full sequence; controller activation; box pose checking; plugin attach/detach; successful placement checks & ``The Gazebo task completed under the recorded setup.''\\
+Implemented and offline-checked & Bounded URDF IK; trajectory samples; speed and joint-limit tests; gripper description transformation & ``The code/test checks this path offline.''\\
+Mathematical explanation & Jacobian concepts, singularity theory, rigid transforms, quintic derivatives & ``This theory explains behavior; no explicit Jacobian controller is coded.''\\
+Future enhancement & Contact-force grasp, real emergency stop, collision planner, physical accuracy & ``Not implemented or validated in this repository.''\\
+\bottomrule
+\end{tabularx}
+\end{table}

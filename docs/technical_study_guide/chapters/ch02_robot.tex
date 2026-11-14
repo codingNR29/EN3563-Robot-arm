@@ -1,0 +1,91 @@
+\chapter{The Yaskawa GP7 Robot}
+\label{ch:robot}
+
+\section{Six revolute degrees of freedom}
+A serial manipulator is a chain of rigid links connected by joints. A revolute
+joint contributes one scalar coordinate, its rotation angle. This GP7 model
+has six actuated revolute joints, so its configuration is
+\begin{equation}
+ \qvec=[q_1,q_2,q_3,q_4,q_5,q_6]^T\in\R^6.
+\end{equation}
+Six independent joint coordinates are sufficient in a generic pose to control
+the three coordinates of the tool position and three independent coordinates
+of orientation. That does not imply every pose is reachable: link geometry,
+joint ranges, singularities, and collisions still restrict the workspace.
+
+The frame orientation belongs to $\SO$, not ordinary three-dimensional
+Euclidean position. In code it is represented as a rotation matrix for FK and
+SciPy's rotation-vector residual for IK. Gazebo publishes Box B's orientation
+as a quaternion $(x,y,z,w)$. These representations describe the same rotation
+but have different storage and algebra.
+
+\section{Joint chain and local axes}
+The authoritative simulation model is
+\file{gp7_ros2/gp7_description/urdf/gp7.urdf}. The six arm joint names, parent
+links, child links, local rotation axes, limits, and speeds are in
+\cref{tab:arm-joints}. All six joint-origin RPY values are zero. Therefore at
+the zero configuration the listed local axes are aligned with the preceding
+link frames; away from zero, each joint axis rotates with its parent link.
+The axis sign is consequential: for example, joint 3's positive $q_3$ rotates
+about its local $-Y$ axis, not $+Y$.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Arm joints from the simulation URDF. Limits and velocity values are
+URDF attributes; joint coordinates are in radians and speed in rad/s.}
+\label{tab:arm-joints}
+\begin{tabular}{c l l l r r r}
+\toprule Index/name & Parent $\to$ child & Local axis & Origin (m) & Lower & Upper & Max speed\\
+\midrule
+1 / \code{joint_1_s} & base\_link $\to$ link\_1\_s & $(0,0,1)$ & $(0,0,.330)$ & -2.9670 & 2.9670 & 6.5449\\
+2 / \code{joint_2_l} & link\_1\_s $\to$ link\_2\_l & $(0,1,0)$ & $(.040,0,0)$ & -1.1344 & 2.5307 & 5.4977\\
+3 / \code{joint_3_u} & link\_2\_l $\to$ link\_3\_u & $(0,-1,0)$ & $(0,0,.445)$ & -1.2217 & 3.3161 & 7.1558\\
+4 / \code{joint_4_r} & link\_3\_u $\to$ link\_4\_r & $(-1,0,0)$ & $(.440,0,.040)$ & -3.3161 & 3.3161 & 9.5993\\
+5 / \code{joint_5_b} & link\_4\_r $\to$ link\_5\_b & $(0,-1,0)$ & $(0,0,0)$ & -2.3561 & 2.3561 & 9.5993\\
+6 / \code{joint_6_t} & link\_5\_b $\to$ link\_6\_t & $(-1,0,0)$ & $(0,0,0)$ & -6.2831 & 6.2831 & 17.4532\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The S/L/U/R/B/T suffixes identify the six modeled axes in order. The first
+three axes primarily position the wrist center; the final three axes form the
+wrist orientation chain. The three wrist axes intersect in the chosen DH
+construction, but the runtime does not exploit a spherical-wrist closed-form
+IK decomposition.
+
+\section{Base, wrist, flange, and grasp point}
+The URDF has a \code{world} link fixed to \code{base_link} by an identity
+transform. The six revolute links terminate at \code{link_6_t}. A fixed
+\SI{0.080}{m} translation leads to \code{flange}; a fixed RPY transform then
+defines \code{tool0}. The adaptive gripper base is attached to \code{tool0}
+at $(0,0,0.04848)$ m with an $x$-axis rotation of approximately $\pi/2$.
+The kinematic end point explicitly used by the code is the massless fixed
+\code{grasp_frame} attached to \code{tool0} at
+\begin{equation}
+ \pvec_{tool0,g}=(-0.0009111,\ 0.0123,\ 0.14598)^T\si{m}.
+\end{equation}
+The grasp frame is used for IK and TCP-to-object checks. It is not the physical
+flange origin and must not be confused with DH frame 6.
+
+\section{The adaptive gripper}
+There are seven gripper links: a base and three links per finger. The driver
+joint is \code{gripper_driver}, a revolute joint about local $Z$, with range
+$[-0.5,0.15]$ rad and a \SI{1}{rad/s} URDF velocity limit. Five other revolute
+joints use URDF \code{mimic} relations with multipliers $+1$ or $-1$. A single
+position command therefore intends coordinated finger motion. The physics
+engine used for the reported Gazebo run warned that it does not support those
+mimic constraints, so source-level mimic relations are not evidence of
+simulated coupled motion. The gripper's mesh geometry is scaled 1.5 in the
+task-description adaptation; GP7 arm meshes remain scale 1.
+
+\section{Pose and orientation}
+For a point with homogeneous coordinates $\tilde p^B=[x,y,z,1]^T$, a rigid
+transform maps it from frame $B$ to frame $A$ by
+\begin{equation}
+ \tilde p^A={}^{A}T_{B}\tilde p^B,\qquad
+ {}^{A}T_B=\begin{bmatrix}{}^{A}R_B&{}^{A}\pvec_B\\0&1\end{bmatrix}.
+\end{equation}
+The upper-left matrix rotates vectors; the upper-right column gives the child
+origin expressed in the parent frame. Composition order matters: the rightmost
+transform acts first on a column vector. These conventions underpin URDF FK,
+the DH derivation, TF publication, and grasp pose comparison.

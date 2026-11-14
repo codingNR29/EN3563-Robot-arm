@@ -1,0 +1,137 @@
+\documentclass[11pt,oneside]{book}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=25mm,headheight=14pt]{geometry}
+\usepackage{mathtools,amssymb,bm}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol,detect-all,range-phrase=--}
+\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage{graphicx,float,caption}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,decorations.pathreplacing}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue!55!black,citecolor=green!40!black,urlcolor=blue!55!black]{hyperref}
+\pdfstringdefDisableCommands{\def\code#1{#1}\def\file#1{#1}}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\definecolor{codebg}{HTML}{F5F7FA}
+\definecolor{codeframe}{HTML}{CBD2DC}
+\definecolor{codeblue}{HTML}{174A7E}
+\definecolor{codegreen}{HTML}{276749}
+\lstdefinestyle{study}{
+  backgroundcolor=\color{codebg},
+  frame=single,rulecolor=\color{codeframe},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codeblue}\bfseries,
+  commentstyle=\color{codegreen},
+  stringstyle=\color{red!55!black},
+  numbers=left,numberstyle=\tiny\color{gray},numbersep=8pt,
+  breaklines=true,breakatwhitespace=false,
+  showstringspaces=false,tabsize=4,columns=fullflexible,
+  keepspaces=true,captionpos=b
+}
+\lstset{style=study}
+
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\setlist{nosep,leftmargin=*}
+\allowdisplaybreaks
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\SO}{\mathrm{SO}(3)}
+\newcommand{\SE}{\mathrm{SE}(3)}
+\newcommand{\Trans}{\,{}^{A}\!T_{B}}
+\newcommand{\qvec}{\bm{q}}
+\newcommand{\pvec}{\bm{p}}
+\DeclareRobustCommand{\file}[1]{\path{#1}}
+\DeclareRobustCommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\sourcefile}[1]{\par\smallskip\noindent\textbf{Repository source: }\file{#1}\par\smallskip}
+\newcommand{\verified}{\textsf{[verified in recorded project evidence]}}
+\newcommand{\notretested}{\textsf{[source-inspected; not rerun in this guide task]}}
+
+\title{Understanding the EN3563 GP7 Pick-and-Place Project\\[0.5em]
+\large A Mathematical, Software, and Simulation Study Guide}
+\author{Group members: [name and index number] \and [name and index number] \and [name and index number]}
+\date{Prepared from repository branch \texttt{main}\\[0.4em]\today}
+
+\begin{document}
+\frontmatter
+\maketitle
+\chapter*{How to use this guide}
+This is a study reference for explaining the actual GP7 project. It combines
+textbook mathematics with implementation-specific facts, and labels the
+boundary between them. The guide is deliberately more expansive than the
+assignment report. The source of truth for runtime behavior is the repository's
+ROS description, launch files, Python modules, controller YAML, SDF world, and
+tests. Historical simulation outcomes are reported as recorded in
+\file{docs/validation.md}; they are not claimed as new results from compiling
+this guide.
+
+Three evidence labels are used throughout:
+\begin{description}
+  \item[Verified in recorded project evidence] A result explicitly recorded in
+  the repository's validation notes or produced by the independent checks
+  documented in this guide.
+  \item[Source-inspected, not rerun] A code path or configuration was examined,
+  but no new Gazebo run was performed for this documentation task.
+  \item[Theory] Mathematical explanation used to interpret the implementation;
+  it is not necessarily an algorithm explicitly coded in the repository.
+\end{description}
+
+When presenting, explain the distinction between Box A and Box B precisely:
+Box A is the fixed, large destination; Box B is the small object picked up.
+Near-mode randomization changes Box B's pickup coordinates, not Box A.
+
+\chapter*{Project provenance and scope}
+The repository's authoritative branch for this guide is \texttt{main}, at the
+state inspected for this document. The EN3563 assignment sheet is
+\file{Task_sheet.pdf}. It asks for a four-or-more-DoF robot, coordinate frames,
+a DH table, FK, IK, trajectory planning, velocity control, upright placement,
+a report, and screen-recorded simulation video. The project uses a six-joint
+GP7 URDF and a ROS 2/Gazebo implementation. The lecturer's later allowance for
+a reachable Box A position was verbal, not text in the assignment sheet; this
+guide makes no claim of written permission.
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\mainmatter
+\include{chapters/ch01_overview}
+\include{chapters/ch02_robot}
+\include{chapters/ch03_environment}
+\include{chapters/ch04_architecture}
+\include{chapters/ch05_urdf_frames}
+\include{chapters/ch06_dh}
+\include{chapters/ch07_forward_kinematics}
+\include{chapters/ch08_inverse_kinematics}
+\include{chapters/ch09_trajectory}
+\include{chapters/ch10_ros2_control}
+\include{chapters/ch11_gazebo_gripper}
+\include{chapters/ch12_task_algorithm}
+\include{chapters/ch13_validation}
+\include{chapters/ch14_build_run}
+\include{chapters/ch15_decisions_limits}
+\include{chapters/ch16_viva}
+
+\appendix
+\include{chapters/appA_dh_reference}
+\include{chapters/appB_symbols}
+\include{chapters/appC_code_reference}
+\include{chapters/appD_file_reference}
+\include{chapters/appE_validation_checklist}
+
+\backmatter
+\bibliographystyle{ieeetr}
+\bibliography{references}
+\end{document}

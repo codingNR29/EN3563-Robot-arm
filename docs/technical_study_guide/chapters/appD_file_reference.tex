@@ -1,0 +1,52 @@
+\chapter{Detailed Repository File and Function Reference}
+\label{app:files}
+
+\section{Python entry points and functions}
+\begin{longtable}{p{.35\textwidth}p{.55\textwidth}}
+\toprule Source path & Key definitions / call relationships\\\midrule\endfirsthead
+\toprule Source path & Key definitions / call relationships\\\midrule\endhead
+\file{gp7_ros2/gp7_ros2_pkg/gp7_motion/kinematics.py} & Constants \code{ARM_JOINTS}, \code{DOWN}; class \code{Kinematics}; methods \code{__init__}, \code{fk}, \code{ik}, \code{segment}, \code{joint_segment}. Used by reach optimization and task launch/node.\\
+\file{gp7_ros2/gp7_ros2_pkg/gp7_motion/reach.py} & \code{farthest_ground_pickup} uses \code{kin.fk}, \code{kin.ik}, SciPy SLSQP; \code{carry_waypoints} adds far/near-specific route.\\
+\file{gp7_ros2/gp7_ros2_pkg/gp7_motion/model.py} & \code{task_description} mutates XML by appending the detachable-joint plugin and replacing package/controller paths.\\
+\file{gp7_ros2/gp7_ros2_pkg/launch/pick_place.launch.py} & \code{generate_launch_description}, \code{setup}; seed or optimize pickup, edit SDF, generate URDF, start simulation and control stack.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/pick_place_node.py} & Class \code{PickPlace}; callbacks \code{stop}, \code{joints}, \code{grasp_state}, \code{box_pose}; operations \code{wait}, \code{settle}, \code{fingers}, \code{switch_grasp}, \code{move}, \code{run}; executable \code{main}.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/arm_controller_node.py} & Constants \code{ARM_JOINTS}, \code{PRESETS}; class \code{ArmControllerNode}; helpers for trajectory, goal, stop/cancel, state callbacks; manual preset client.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/gripper_controller_node.py} & Class \code{GripperControllerNode}; validates scalar command and publishes one-element controller array.\\
+\file{gp7_ros2/gp7_ros2_pkg/scripts/demo_sequence_node.py} & \code{make_trajectory}; class \code{DemoSequenceNode}; manually scripts home/reach/open/close/home, not integrated task.\\
+\file{gp7_ros2/gp7_ros2_pkg/test/test_kinematics.py} & Class \code{MotionTests}; six test methods tabulated in \cref{tab:tests}.\\
+\file{docs/verify_dh.py} & \code{fixed}, \code{dh_matrix}, \code{dh_fk}; main-level URDF checks and 104 comparisons.\\
+\file{gp7_ros2/gp7_gazebo/launch/gazebo.launch.py} & \code{generate_launch_description}; patches paths, sets resource path, includes Gazebo, bridges clock, starts state publisher/spawn and ordered controller spawners.\\
+\file{gp7_ros2/gp7_description/launch/display.launch.py} & \code{generate_launch_description}; loads URDF with shell \code{cat}; starts joint-state publisher GUI, robot-state publisher, and RViz.\\
+\file{gp7_ros2/gp7_ros2_pkg/launch/gp7_sim_control.launch.py} & Includes generic Gazebo launch and starts manual nodes after 8 s.\\
+\bottomrule
+\end{longtable}
+
+\section{Configuration and asset loading map}
+\begin{longtable}{p{.39\textwidth}p{.51\textwidth}}
+\toprule Path & Consumer and significance\\\midrule\endfirsthead
+\toprule Path & Consumer and significance\\\midrule\endhead
+\file{gp7_ros2/gp7_description/urdf/gp7.urdf} & Read by task launch/node, robot-state publisher and Gazebo spawn; source for joint axes, limits, visual/collision and control tags.\\
+\file{gp7_ros2/gp7_gazebo/config/ros2_controllers.yaml} & Controller manager configuration patched to absolute installed path.\\
+\file{gp7_ros2/gp7_gazebo/worlds/pick_place.sdf} & Task world template; launch edits Box B pose in a temp file; includes physics/objects.\\
+\file{gp7_ros2/gp7_description/rviz/display.rviz} & RViz display profile for optional visualization launch.\\
+\file{gp7_ros2/gp7_description/meshes/gp7/visual/} & Seven GP7 visual STL meshes.\\
+\file{gp7_ros2/gp7_description/meshes/gp7/collision/} & Seven GP7 collision STL meshes.\\
+\file{gp7_ros2/gp7_description/meshes/adaptive_gripper/visual/} & Seven DAE meshes for adaptive gripper visuals and referenced collision geometries.\\
+\file{GP7 (Solidworks 2020)/GP7 Robot.SLDASM} and parts & Original CAD assembly and many SLDPRT/SLDASM parts; retained, not loaded by runtime.\\
+\file{GP7 (Solidworks 2020)/Parts/*.step} & GP7 link STEP exports; retained as source assets, not loaded by runtime.\\
+\file{GP7 (Solidworks 2020)/URDF/Build/Build.urdf} & Separate CAD URDF and mesh directory; not the task model.\\
+\file{GP7 (Solidworks 2020)/GP7 components/GP7/GP7.urdf} & Separate CAD URDF and mesh directory; not the task model.\\
+\file{Temporary 3D model parts/*.step} & Four legacy geometry files, no runtime source reference identified.\\
+\file{docs/report.md}, \file{docs/validation.md}, \file{docs/kinematics.md}, \file{docs/setup.md} & Human-maintained technical/submission evidence and commands; no ROS runtime import.\\
+\file{gp7_ros2/PICK_PLACE.md}, \file{gp7_ros2/run_pick_place.sh} & User guide and optional environment wrapper; helper has known PYTHONPATH caveat.\\
+\bottomrule
+\end{longtable}
+
+\section{Important distinction among executable scripts}
+The integrated task entry point is installed as \code{pick_place_node} and
+launched by \code{pick_place.launch.py}. The arm and gripper wrapper scripts
+are for manual topic-based control. \code{demo_sequence_node} is a scripted
+motion demonstration and explicitly reports that it is not the assignment
+task. \code{display.launch.py} is visualization-only. Confusing these entry
+points can produce a plausible Gazebo animation that does not execute the
+validated Box A/Box B algorithm.

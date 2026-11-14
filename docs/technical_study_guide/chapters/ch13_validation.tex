@@ -1,0 +1,99 @@
+\chapter{Testing and Validation}
+\label{ch:validation}
+
+\section{Evidence categories}
+Validation evidence in this project has three levels:
+\begin{enumerate}
+ \item \textbf{Source-level/offline}: Python tests and the standalone DH
+ verifier check mathematics, URDF parsing, and trajectory samples without
+ starting ROS or Gazebo.
+ \item \textbf{Integration simulation}: a Gazebo task launch confirms that
+ controllers activate, the task node communicates, and the simulated object
+ completes the sequence.
+ \item \textbf{Physical validation}: no physical GP7 measurements are
+ recorded. Simulator success does not imply that a real controller, gripper,
+ or robot will reproduce it.
+\end{enumerate}
+
+\section{Purpose of all six offline regression tests}
+The existing file is \file{gp7_ros2/gp7_ros2_pkg/test/test_kinematics.py}.
+It uses standard Python \code{unittest}, NumPy/SciPy and XML parsing. It does
+not launch ROS nodes or contact Gazebo.
+\begin{longtable}{p{.35\textwidth}p{.59\textwidth}}
+\caption{Test cases and what each asserts.}\label{tab:tests}\\
+\toprule Test function & Checked behavior and boundary\\\midrule\endfirsthead
+\toprule Test function & Checked behavior and boundary\\\midrule\endhead
+\code{test_home_fk} & At zero joints, FK agrees with an independently summed set of URDF origins and tool/grasp offsets to tolerance $10^{-7}$ m.\\
+\code{test_pick_place_paths_and_controller_interpolation} & Repeats seed-7 near pose, solves above-pickup IK, builds near-mode descent/lift/transfer/place/retreat segments, checks joint limits, speed at or below 0.500001 rad/s, zero endpoint velocities, fixed downward orientation on cubic-Hermite resamples, and endpoint position within $10^{-6}$ m.\\
+\code{test_farthest_ground_pickup_and_complete_route} & Checks the optimized far radius against an independent geometric upper bound, the 5 mm margin, far-route heights, joint limits, sampled speed/orientation, minimum ground clearance, and Cartesian endpoint accuracy.\\
+\code{test_arm_and_box_dimensions} & Checks selected arm joint-origin translations, unit arm mesh scale, and world collision/visual dimensions of Box A and Box B.\\
+\code{test_task_preserves_adaptive_gripper} & Confirms task URDF retains all links, seven gripper links use the adaptive meshes at 1.5 scale, driver has a position command interface, and no suction-tool link was substituted.\\
+\code{test_unreachable_target_fails} & Confirms an obviously distant $(5,5,5)$ m target raises \code{ValueError}.\\
+\bottomrule
+\end{longtable}
+
+The cubic-Hermite resampling in two tests checks properties between the
+original trajectory sample points using the supplied positions/velocities.
+It is still a numerical offline check; it does not simulate controller
+tracking error, collision contacts, or physical acceleration.
+
+\section{Independent DH verification}
+\file{docs/verify_dh.py} checks six URDF joint origins/axes against expected
+values, creates a separate implementation of the standard-DH matrix and tool
+transform, then compares 4 fixed configurations and 100 deterministic random
+joint vectors (seed 42) against runtime URDF FK. On the 14 November 2026
+recorded run the maximum translation error was $5.50\times10^{-16}$ m and
+the maximum relative-rotation angle was $4.93\times10^{-16}$ rad. A
+documentation-task rerun is separately reported in the final delivery note.
+This verifies convention/matrix consistency to floating-point round-off,
+not an independent physical measurement.
+
+\section{Recorded Gazebo demonstrations}
+\Cref{tab:gazebo-results} summarizes the actual runs recorded in
+\file{docs/validation.md}. ``Far'' is the optimized near-boundary pose; ``near''
+uses the seeded pseudorandom region. Both used fixed Box A at the reachable
+position. The two headless runs on 14 November were documented as successful
+and emitted \code{PICK AND PLACE VERIFIED}. An earlier GUI far-mode run was
+recorded on 11 October. There was no screen recording for the 14 November
+headless runs.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Previously recorded Gazebo outcomes. These are not new runs from
+LaTeX compilation.}\label{tab:gazebo-results}
+\begin{tabular}{p{.22\textwidth}p{.34\textwidth}p{.17\textwidth}p{.20\textwidth}}
+\toprule Date / mode & Box B pickup center (m) & Position error & Orientation result\\\midrule
+11 Oct 2026, GUI far & $(-.068740764,-.928078308,.025)$ & $9.47\times10^{-7}$ m & $5.97\times10^{-7}$ rad final; max sampled $5.97\times10^{-7}$ rad\\
+14 Nov 2026, headless far & Same optimized region & $8.88\times10^{-7}$ m & final and max sampled below $3.80\times10^{-7}$ rad\\
+14 Nov 2026, headless near, seed 7 & $(.532383276,-.217932066,.025)$ & $8.84\times10^{-7}$ m & $2.19\times10^{-6}$ rad final\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The task accepts final position error at most 8 mm and orientation error at
+most $1^\circ$. Position error is Euclidean distance between latest observed
+Box B center and target center:
+\begin{equation}
+ e_p=\|p_{box}-p_{target}\|_2.
+\end{equation}
+Orientation error is the geodesic angle of the relative rotation:
+\begin{equation}
+ e_R=\operatorname{magnitude}(R_{initial}^{-1}R_{final}).
+\end{equation}
+While carrying, the task stores the largest angle it observes on each
+50-Hz-published pose sample. It is sampled evidence rather than a proof of
+continuous orientation at every physics integration step.
+
+\section{What the simulation results do and do not establish}
+The small placement errors are consistent with a fixed-joint attachment,
+simulation pose publishing, and arithmetic. They do not quantify TCP accuracy,
+contact uncertainty, actuator tracking error on hardware, or grasp force. The
+physics engine warning about unsupported mimic constraints is material. The
+reports also note estimated robot inertias, no general collision planner, and
+no independent comparison against the actual SolidWorks/manufacturer model.
+
+\section{Verification performed while preparing this guide}
+This guide task re-runs read-only or offline checks against \texttt{main}:
+the DH verifier and six unit tests. It does not rerun the Gazebo headless/GUI
+task or rebuild all ROS packages solely to create this document. The final
+message will identify exact outputs and whether a TeX compiler was available.

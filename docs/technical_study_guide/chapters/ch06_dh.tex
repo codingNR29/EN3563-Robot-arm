@@ -1,0 +1,180 @@
+\chapter{Standard Denavit--Hartenberg Parameters}
+\label{ch:dh}
+
+\section{Convention and geometry}
+The project derives its table using \textbf{standard DH}:
+\begin{equation}
+ A_i=R_z(\theta_i)\,T_z(d_i)\,T_x(a_i)\,R_x(\alpha_i),
+ \qquad {}^{i-1}T_i=A_i.
+ \label{eq:standard-dh-order}
+\end{equation}
+The revolute coordinate $\theta_i$ rotates about $z_{i-1}$. After this
+rotation, the offset $d_i$ moves along that axis. The common-normal displacement
+$a_i$ is along $x_i$; finally $\alpha_i$ rotates about that common-normal axis
+to align the next joint axis. Because the transforms act right-to-left on a
+point, the matrix product is written in the order in \cref{eq:standard-dh-order}.
+This is not modified DH; swapping $T_x$ and $R_x$ or using the modified-DH
+table would change the kinematics.
+
+For parameters $(\theta,d,a,\alpha)$, the homogeneous transform is
+\begin{equation}
+ A(\theta,d,a,\alpha)=
+ \begin{bmatrix}
+ c_\theta&-s_\theta c_\alpha&s_\theta s_\alpha&a c_\theta\\
+ s_\theta&c_\theta c_\alpha&-c_\theta s_\alpha&a s_\theta\\
+ 0&s_\alpha&c_\alpha&d\\0&0&0&1
+ \end{bmatrix}.
+ \label{eq:dh-general}
+\end{equation}
+The $\alpha$ and $d$ values are signed coordinate displacements and rotations;
+they need not be positive physical link lengths. Frame axes must form
+right-handed orthonormal triads, with $y_i=z_i\times x_i$.
+
+\section{Mapping URDF axes to DH axes}
+All six arm joint origins in the simulation URDF have zero RPY. Their joint
+origin positions and local axes are in \cref{tab:arm-joints}. At the zero
+configuration, the DH joint axes are chosen as
+\begin{align}
+ z_0&=+Z, &z_1&=+Y, &z_2&=-Y,\\
+ z_3&=-X, &z_4&=-Y, &z_5&=-X.
+\end{align}
+These choices reproduce the positive directions in the URDF. The corresponding
+local joint axes and URDF origins are listed in \cref{tab:arm-joints}. DH frames are
+free to differ from link frames as long as each $A_i$ maps correctly; the
+table's $q_i$ remain the URDF joint positions in the same order.
+
+\section{Frame-by-frame construction}
+\begin{enumerate}[label=\textbf{Joint \arabic*:},leftmargin=*]
+ \item \textbf{Base rotation S.} $z_0=+Z$ is the base yaw axis. $z_1=+Y$ is
+ the shoulder axis at $(0.040,0,0.330)$ m. Their axes are perpendicular and
+ offset by the base/shoulder geometry. Choose $x_1=+X$, the common normal
+ direction. The vertical displacement is $d_1=0.330$ m and the common-normal
+ offset is $a_1=0.040$ m. The $-\pi/2$ twist aligns the next z-axis with
+ $+Y$. The joint angle is $\theta_1=q_1$.
+
+ \item \textbf{Shoulder L.} $z_1=+Y$ and $z_2=-Y$ are antiparallel axes.
+ The upper-arm separation is $0.445$ m along home $+Z$, so choose
+ $x_2=+Z$ and $a_2=0.445$ m. The antiparallel axis choice gives
+ $\alpha_2=\pi$. The URDF zero shoulder angle must place $x_2$ along $+Z$;
+ with the chosen preceding frame this requires the fixed offset
+ $\theta_2=q_2-\pi/2$. There is no $d_2$ translation.
+
+ \item \textbf{Elbow U.} $z_2=-Y$ and $z_3=-X$ define perpendicular axes.
+ The short elbow offset is $0.040$ m along $+Z$ (the common normal), giving
+ $a_3=0.040$ m. The chosen twist is $\alpha_3=-\pi/2$ and the angle is
+ $\theta_3=q_3$. There is no z-offset.
+
+ \item \textbf{Wrist roll R.} $z_3=-X$ and $z_4=-Y$ intersect at the wrist
+ axis geometry after moving to the wrist center. The center is displaced
+ $+0.440X$ from frame 3, opposite $z_3$; hence the signed parameter is
+ $d_4=-0.440$ m. Since the axes intersect, $a_4=0$. The table uses
+ $\alpha_4=+\pi/2$ and $\theta_4=q_4$.
+
+ \item \textbf{Wrist bend B.} $z_4=-Y$ and $z_5=-X$ intersect at the same
+ wrist center, so $a_5=d_5=0$. The selected twist is $\alpha_5=-\pi/2$ and
+ the revolute coordinate is $\theta_5=q_5$.
+
+ \item \textbf{Wrist twist T.} $z_5$ and $z_6$ are both $-X$ at the same
+ point. There is no translation or twist, so $a_6=d_6=\alpha_6=0$, with
+ $\theta_6=q_6$.
+\end{enumerate}
+
+The origin/axis picture is in \cref{fig:dh-frames}. It is a home-pose X--Z
+projection; axes parallel to base $Y$ are marked out of or into the page.
+The signed offset $d_4=-0.440$ is particularly easy to misread: the actual
+hardware separation is positive length, but the selected $z_3$ coordinate
+points opposite the displacement.
+
+\section{Verified DH table}
+\begin{table}[htbp]
+\centering
+\caption{Verified standard-DH parameters for the task URDF. Angles are in
+radians, distances in metres.}
+\label{tab:dh}
+\begin{tabular}{c l r r r l}
+\toprule $i$ & axis & $a_i$ & $\alpha_i$ & $d_i$ & $\theta_i$\\\midrule
+1&S&0.040&$-\pi/2$&0.330&$q_1$\\
+2&L&0.445&$\pi$&0&$q_2-\pi/2$\\
+3&U&0.040&$-\pi/2$&0&$q_3$\\
+4&R&0&$\pi/2$&-0.440&$q_4$\\
+5&B&0&$-\pi/2$&0&$q_5$\\
+6&T&0&0&0&$q_6$\\\bottomrule
+\end{tabular}
+\end{table}
+
+Only the geometry columns $a_i,\alpha_i,d_i$ are constant. Each $q_i$ is
+variable, and the sole constant angular correction is $-\pi/2$ in the second
+row. The mapping preserves the URDF joint names and signs: there are no
+additional sign inversions.
+
+\section{Derivation of all six matrices}
+Define $c_i=\cos q_i$, $s_i=\sin q_i$, and
+$v_2=q_2-\pi/2$. Substitution into \cref{eq:dh-general} yields
+\begin{align}
+A_1&=\begin{bmatrix}
+c_1&0&-s_1&0.040c_1\\s_1&0&c_1&0.040s_1\\0&-1&0&0.330\\0&0&0&1
+\end{bmatrix},\\[1mm]
+A_2&=\begin{bmatrix}
+\cos v_2&\sin v_2&0&0.445\cos v_2\\
+\sin v_2&-\cos v_2&0&0.445\sin v_2\\
+0&0&-1&0\\0&0&0&1
+\end{bmatrix},\\[1mm]
+A_3&=\begin{bmatrix}
+c_3&0&-s_3&0.040c_3\\s_3&0&c_3&0.040s_3\\0&-1&0&0\\0&0&0&1
+\end{bmatrix},\\[1mm]
+A_4&=\begin{bmatrix}
+c_4&0&s_4&0\\s_4&0&-c_4&0\\0&1&0&-0.440\\0&0&0&1
+\end{bmatrix},\\[1mm]
+A_5&=\begin{bmatrix}
+c_5&0&-s_5&0\\s_5&0&c_5&0\\0&-1&0&0\\0&0&0&1
+\end{bmatrix},\\[1mm]
+A_6&=\begin{bmatrix}
+c_6&-s_6&0&0\\s_6&c_6&0&0\\0&0&1&0\\0&0&0&1
+\end{bmatrix}.
+\label{eq:all-dh-matrices}
+\end{align}
+For example, row 1 has $\alpha_1=-\pi/2$, so
+$\cos\alpha_1=0$ and $\sin\alpha_1=-1$. Inserting those into the general
+matrix gives its second and third columns and confirms the negative sign in
+the $(3,2)$ entry. Row 2 uses $\cos\pi=-1$, which explains its negative
+$\cos v_2$ entry. This substitution process is the safest way to catch common
+DH sign errors.
+
+\section{Base and tool transforms}
+The world-to-base and base-to-DH-frame-0 transforms are identities in this
+spawn configuration. Link \code{link_6_t} to the selected DH frame 6 has
+rotation
+\begin{equation}
+ C=\begin{bmatrix}0&0&-1&0\\0&1&0&0\\1&0&0&0\\0&0&0&1\end{bmatrix}.
+\end{equation}
+The fixed transform from frame 6 to grasp frame is constructed from the exact
+URDF fixed joints:
+\begin{equation}
+ {}^6T_g=C^{-1}T_{link6,flange}T_{flange,tool0}T_{tool0,g}.
+ \label{eq:dh-tool-transform}
+\end{equation}
+Numerically, using rounded values for display,
+\begin{equation}
+ {}^6T_g\approx\begin{bmatrix}
+ 1&0&0&-0.0009111\\0&-1&0&-0.0123\\0&0&-1&-0.22598\\0&0&0&1
+ \end{bmatrix}.
+\end{equation}
+Then the chain actually compared against runtime FK is
+\begin{equation}
+ {}^BT_g(q)=A_1A_2A_3A_4A_5A_6\,{}^6T_g.
+ \label{eq:dh-chain}
+\end{equation}
+
+\section{Independent derivation versus executable code}
+The runtime \code{Kinematics.fk} does \emph{not} evaluate the six hard-coded
+DH matrices. It traverses the URDF chain and multiplies each joint origin by
+the rotation about that joint's normalized axis. The standalone
+\file{docs/verify_dh.py} separately defines the table and matrix in
+\cref{eq:dh-general}, builds the fixed tool transform, and compares its result
+to URDF FK. This separation is valuable: if both computations reused the same
+table implementation, agreement would be a weaker check.
+
+The verifier also checks the URDF joint origins, zero RPY, and local axes
+against expected source geometry. The DH table was chosen to fit this exact
+task URDF. It has not been proven to reproduce the manufacturer CAD or the
+other URDF exports stored under the SolidWorks directory.

@@ -1,0 +1,163 @@
+\chapter{Presentation and Viva Preparation}
+\label{ch:viva}
+
+\section{A concise project introduction}
+\begin{quote}
+We implemented a six-axis Yaskawa GP7 pick-and-place system in ROS 2 Jazzy
+and Gazebo Harmonic. The runtime parses the actual URDF for forward
+kinematics, uses joint-limit-bounded numerical least squares for inverse
+kinematics, samples a quintic-scaled Cartesian route, and sends it through a
+ROS 2 joint trajectory controller. Gazebo pose and grasp feedback are checked
+throughout the task. Our fixed Box A position is reachable under the
+lecturer's subsequent verbal clarification; the original sheet prints an
+unreachable $(1,1,0)$ destination. The successful simulated carry uses an
+idealized detachable fixed joint, so we do not claim physical grasp
+performance.
+\end{quote}
+
+\section{Suggested presentation sequence}
+\begin{enumerate}
+ \item State the assignment and clarify the original and verbally approved
+ Box A coordinate distinction.
+ \item Show the robot, identify the six arm joints, and point out the grasp
+ frame and adaptive gripper.
+ \item Explain the standard-DH frame construction and table, especially the
+ $q_2-\pi/2$ offset and signed $d_4=-0.440$ m.
+ \item Demonstrate one home/nonzero FK transform and say the executable FK
+ reads URDF transforms.
+ \item Explain numerical IK residual, bounds, warm-starting, restart seeds,
+ and why it is not an analytical GP7 solution.
+ \item Show the quintic time law, waypoint sequence, controller action and
+ feedback architecture.
+ \item Play the Gazebo demonstration. Label far/near mode and seed and narrate
+ approach, grasp, carry, release, and retreat.
+ \item Present recorded test metrics and immediately qualify the fixed-joint
+ grasp, mimic warning, estimated inertias, and absence of physical validation.
+\end{enumerate}
+
+\section{Demonstration narration}
+Before pressing play, show the fixed Box A at $(0.55,0.35,0)$ and state that
+Box B's pickup is the randomized test pose. For near-mode seed 7, say that it
+produces the repeatable pickup $(0.532383276,-0.217932066,0.025)$ m; the fixed
+destination remains unchanged. Narrate the downward approach and descent,
+position-checked close, plugin attachment, lift and upright transfer, lowering
+to 1 mm above the center target, release, retreat, and settling. Finish by
+showing \code{PICK AND PLACE VERIFIED} and the final error. Explain that the
+plugin fixed joint intentionally retains the cube and does not demonstrate
+force-based grasping. The report draft in \file{docs/report.md} contains a
+step-by-step recording checklist; a headless validation log is not a substitute
+for the assignment's screen-recorded video.
+
+\section{Who should understand what}
+The task sheet allows at most three group members. The guide does not assign
+names or roles. For preparation, all members should be able to explain the
+project scope, clarify Box A/Box B, interpret the DH table, and describe the
+grasp limitation. A group may distribute deeper preparation as follows, then
+fill the placeholders with actual members:
+\begin{itemize}
+ \item \textbf{Member [name/index]}: URDF, frame assignment, DH derivation,
+ FK verifier, and physical meaning of signed parameters.
+ \item \textbf{Member [name/index]}: numerical IK, trajectory sampling,
+ controller interfaces, and code-to-mathematics mapping.
+ \item \textbf{Member [name/index]}: launch architecture, Gazebo world,
+ gripper/plugin, test evidence, setup, and limitations.
+\end{itemize}
+This is a study suggestion only; no group membership is inferred.
+
+\section{Likely viva questions and grounded answers}
+\subsection{Foundation}
+\begin{enumerate}
+ \item \textbf{How many degrees of freedom does the modeled arm have?} Six
+ actuated revolute arm joints, named \code{joint_1_s} through
+ \code{joint_6_t}. The gripper driver is an additional actuated joint but
+ is not counted as one of the six arm axes.
+ \item \textbf{What does FK calculate?} The pose of \code{grasp_frame} for
+ a known six-element joint vector. The runtime follows fixed URDF origins
+ and joint-axis rotations.
+ \item \textbf{What is the difference between a ROS topic and action here?}
+ Joint states and stop are topics; a trajectory is a long-running action
+ with goal acceptance, result, and cancellation.
+ \item \textbf{What is the DH convention?} Standard DH:
+ $R_z(\theta_i)T_z(d_i)T_x(a_i)R_x(\alpha_i)$. Our frames follow that order.
+ \item \textbf{Why is the object kept upright?} Cartesian segments hold
+ $R_{down}=\mathrm{diag}(1,-1,-1)$, and box-pose feedback is compared with
+ its initial rotation.
+\end{enumerate}
+
+\subsection{Intermediate}
+\begin{enumerate}
+ \item \textbf{Why is $d_4$ negative?} Frame $z_3$ points in $-X$, but the
+ wrist-center displacement from frame 3 is in $+X$. DH parameters are signed
+ coordinate displacements, hence $d_4=-0.440$ m.
+ \item \textbf{Why does $q_2$ have an offset?} The chosen DH frame's zero
+ orientation differs from the URDF shoulder zero by $\pi/2$. The mapping is
+ $\theta_2=q_2-\pi/2$; no joint sign is reversed.
+ \item \textbf{Does the task execute the DH FK?} No. Runtime FK parses URDF;
+ the independent documentation script separately evaluates DH and compares
+ transforms over 104 configurations.
+ \item \textbf{How does the IK solver handle joint limits?} It reads lower
+ and upper bounds from URDF, clips each initial seed slightly inside the
+ bounds, and calls SciPy bounded least squares.
+ \item \textbf{Why seed each IK point with the preceding solution?} Nearby
+ seeds favor a continuous branch; the path also rejects adjacent changes
+ above 0.15 rad. Neither guarantees global branch optimality.
+ \item \textbf{Why use quintic blending?} The scalar polynomial has zero
+ endpoint first and second derivatives for rest-to-rest moves. Actual
+ Cartesian segments then solve nonlinear IK, so sampled joint acceleration
+ is not analytically guaranteed by that polynomial alone.
+ \item \textbf{What does the 0.5 rad/s limit mean?} The planner caps
+ sampled velocity by the lesser of 0.5 rad/s and URDF per-joint velocity,
+ stretches time, and rescales velocity. It does not enforce acceleration.
+\end{enumerate}
+
+\subsection{Advanced}
+\begin{enumerate}
+ \item \textbf{Is this an analytical spherical-wrist IK?} No. It is a
+ bounded residual-based SciPy least-squares solve. The source has no explicit
+ geometric Jacobian, wrist decomposition, or enumeration of analytical
+ branches.
+ \item \textbf{What is questionable about the residual norm?} It combines
+ metres and radians without normalization, so a single $10^{-6}$ norm
+ threshold is a solver acceptance rule, not a dimensionally uniform physical
+ tolerance.
+ \item \textbf{What does 104-configuration agreement prove?} That the
+ documented DH table, fixed tool transform, and runtime URDF FK are
+ numerically consistent for four specific and 100 seeded in-limit cases.
+ It does not prove the URDF matches manufacturer CAD or physical hardware.
+ \item \textbf{Why does a micrometre-scale position error not imply that
+ accuracy on a real robot?} The object is rigidly attached by a simulator
+ fixed joint and pose is computed in simulation; there is no contact-force,
+ sensor, actuator calibration, or hardware measurement.
+ \item \textbf{What does the mimic warning mean?} The selected physics
+ engine does not support the configured mimic constraints. The task's
+ successful object carry comes from detachable-joint retention, so finger
+ coupling is not validated by that result.
+ \item \textbf{Is /gp7/stop an emergency stop?} No. It requests action
+ cancellation and retains an attached simulation object. It is not a
+ safety-rated hardware stop.
+ \item \textbf{How does the task avoid an IK failure after motion starts?}
+ It calculates the approach and every Cartesian segment before sending the
+ first arm command; failures in IK or branch continuity abort pre-motion.
+ This is not collision preflight.
+ \item \textbf{How was reachability evaluated for far mode?} SLSQP
+ maximizes horizontal grasp radius subject to $z=0.025$, fixed downward
+ orientation, and URDF joint bounds, starting from several angular seeds.
+ It backs off the computed boundary by 5 mm. This is pose-specific and the
+ exact boundary is straight-elbow singular.
+\end{enumerate}
+
+\section{Common explanations to avoid}
+\begin{itemize}
+ \item Do not say the original assignment sheet changed; state that the
+ lecturer later gave a verbal clarification.
+ \item Do not say Box A is randomized. Box A stays fixed; near mode samples
+ Box B pickup coordinates.
+ \item Do not say the runtime uses the DH matrices. It uses URDF FK; DH is
+ an independently verified model for explanation.
+ \item Do not call the IK analytic, Jacobian-pseudoinverse, or collision-aware.
+ \item Do not claim the fingers physically grasp the cube by friction. The
+ simulation uses a detachable fixed joint and mimic support is limited.
+ \item Do not call sampled velocity a proven acceleration/jerk profile or
+ claim the controller's commanded path is a measured physical path.
+ \item Do not present a successful Gazebo node log as the required video.
+\end{itemize}

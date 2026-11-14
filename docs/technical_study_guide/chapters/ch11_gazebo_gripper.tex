@@ -1,0 +1,87 @@
+\chapter{Gazebo Simulation and Gripper}
+\label{ch:gazebo}
+
+\section{World and physics}
+\file{gp7_ros2/gp7_gazebo/worlds/pick_place.sdf} defines the
+\code{gp7_pick_place} world. It loads physics, user commands, and scene
+broadcasting systems; applies gravity $(0,0,-9.81)$ m/s$^2$; and configures a
+nominal maximum physics step of \SI{0.001}{s} and real-time factor 1. The
+selected physics engine was observed to warn that mimic constraints are not
+supported. The environment includes a directional light and static ground
+plane.
+
+Box A is a static blue box of size $(0.30,0.30,0.20)$ m with its model center
+at $(0.55,0.35,0.10)$ m. This corresponds to the ground-referenced position
+$(0.55,0.35,0)$ m used in the documentation. Box B is a dynamic red cube of
+side \SI{0.05}{m}, mass \SI{0.05}{kg}, and center height \SI{0.025}{m} when on
+the ground. The world file starts it at $(0.55,-0.20,0.025)$ m; the task
+launch creates a temporary edited world for either far or seeded-near pickup.
+Gazebo's pose publisher emits model pose vectors at \SI{50}{Hz}.
+
+\section{Robot spawn and control coupling}
+The task launch calls the \code{ros_gz_sim create} executable with the
+generated URDF string. The robot description contains the external
+\code{gz_ros2_control/GazeboSimSystem} plugin and controller YAML path.
+Gazebo then exposes simulated joint state/command interfaces to the ROS 2
+controller manager. Controller actions and gripper command topics alter the
+Gazebo robot. The clock bridge aligns ROS timers and task waits with simulated
+time.
+
+\section{Finger actuation and mimic limitation}
+Only \code{gripper_driver} is commanded by the task. The URDF describes five
+dependent finger revolute joints with mimic multipliers of $+1$ or $-1$. The
+task's \code{fingers(target)} function interpolates from the observed current
+driver angle to target using quintic scaling; its nominal duration is
+\begin{equation}
+ T_g=\max\left(1\si{s},\frac{|q_{target}-q_{start}|}{0.25\si{rad/s}}\right).
+\end{equation}
+It publishes at approximately \SI{20}{ms} simulation-time steps, waits an
+additional \SI{0.4}{s}, and rejects if measured driver angle differs by more
+than 0.02 rad. During task grasp the close target is $-0.162$ rad; the fully
+open target is $+0.15$ rad. The manual wrapper allows commands down to
+$-0.5$ rad, but the task does not use that full-close setting.
+
+The physics engine warning means URDF mimic metadata did not establish
+realistic finger coupling in the recorded simulation. A visually moving
+driver or a successfully completing task is not evidence that both fingers
+generated accurate, symmetric contact forces.
+
+\section{Idealized object attachment}
+The task-specific function \code{task_description} appends a Gazebo
+\code{gz-sim-detachable-joint-system} plugin to the URDF. It identifies
+\code{link_6_t} as parent, model \code{box_b} and link \code{link} as child,
+and uses Gazebo Transport topics:
+\begin{align*}
+&\code{/gp7/grasp/attach},\qquad
+\code{/gp7/grasp/detach},\\
+&\code{/gp7/grasp/state}.
+\end{align*}
+The task node waits for state text \code{attached} or \code{detached}. Gazebo's
+plugin is initially attached when a model starts, so the node explicitly asks
+for and confirms detachment before approach. After the fingers close, the node
+requests attachment. During transfer, it verifies that the attachment remains
+confirmed and reads the cube pose. At placement it checks the object is close
+to target, detaches, opens, retreats, and lets gravity settle the cube.
+
+This fixed-joint mechanism forces the cube to follow the robot rigidly. It
+does not calculate fingertip contact, friction cones, normal force, grasp
+stability, tactile feedback, or slip. Consequently, reported micrometre-scale
+simulation placement errors characterize the constrained simulation pose and
+numerics; they are not force-based grasp accuracy or a physical robot claim.
+
+\section{Collision and contact scope}
+Gazebo has visual/collision objects and gravity, and the dynamic cube settles
+after detach. However, the planner does not query collision geometry or plan
+around arbitrary obstacles. Its far route includes a hand-selected inward
+waypoint to avoid cutting through the base; this is not general collision
+checking. The gripper collision tags reference visual DAE geometry, so their
+contact representation is also not independently validated as a realistic
+finger-contact model.
+
+\section{Grasp improvement path (future work)}
+A physical or contact-realistic extension would need supported mimic control
+or independent finger joints, calibrated contact/collision geometry, suitable
+friction coefficients, validated inertias, explicit gripper force/current
+limits, and experiments measuring retention and slip. The detachable joint
+could remain a software test fixture but should be disabled for those tests.
+None of these future changes are claimed as implemented.

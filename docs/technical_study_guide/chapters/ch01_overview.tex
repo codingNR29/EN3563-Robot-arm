@@ -1,0 +1,114 @@
+\chapter{Project Overview and Assignment}
+\label{ch:overview}
+
+\section{The engineering problem}
+The EN3563 mini-project asks a group to implement a pick-and-place task with a
+robot arm that has at least four degrees of freedom. The work is intentionally
+end-to-end: model the robot, assign link coordinate frames, construct a DH
+table, compute forward kinematics (FK), formulate inverse kinematics (IK),
+plan a smooth trajectory, control the joints, keep the carried object upright,
+and submit a report and screen-recorded demonstration. The supplied sheet
+offers physical construction or a Gazebo simulation using the supplied
+Yaskawa GP7 CAD. The simulation option explicitly allows a simplified gripper
+because the supplied CAD robot does not include an end effector. It specifies
+the robot at the origin, a large Box A of $0.30\times0.30\times0.20$ m, a
+$0.05$ m cube Box B at a random reachable ground location, and Box B placement
+at the center of Box A's top surface while preserving orientation
+\cite{assignment}.
+
+The implemented system is a ROS 2 and Gazebo Sim application around a six-axis
+GP7 URDF. It is more than a static kinematics exercise: the launch code creates
+a task-specific robot description, starts Gazebo and the controllers, chooses
+Box B's pickup pose, and starts a Python node that plans, executes, monitors,
+attaches, releases, and verifies the object.
+
+\section{Original requirement, clarification, and implementation}
+The original sheet places Box A at $(1,1,0)$ m. Relative to the robot base at
+the origin, this has horizontal radius
+\begin{equation}
+  r_A=\sqrt{1^2+1^2}=\sqrt{2}\approx\SI{1.414}{m}.
+  \label{eq:box-a-radius}
+\end{equation}
+The repository's engineering notes estimate an upper horizontal reach below
+\SI{1.03}{m} for this robot model, before joint-limit constraints. Thus the
+printed destination is not achievable in the implemented scene. After the
+sheet was issued, the lecturer verbally clarified that a reachable Box A
+location could be used. The implementation consequently fixes Box A's ground
+position at $(0.55,0.35,0)$ m. This is a later verbal clarification; it is not
+an amendment printed in the supplied sheet, and the group has no written
+permission to claim.
+
+The assignment's random reachable ground pose refers to the movable small
+object, Box B. The project keeps Box A fixed while offering two Box B pickup
+modes:
+\begin{itemize}
+  \item \textbf{Far mode}: numerical constrained optimization finds a
+  maximum-radius, downward-facing grasp. The actual pickup is moved inward by
+  a \SI{5}{mm} margin. It is optimized and deterministic, not random.
+  \item \textbf{Near mode}: the launch file samples $x\sim U(0.50,0.60)$ and
+  $y\sim U(-0.23,-0.15)$ using Python's seeded pseudorandom generator. With
+  seed 7 the observed pose was $(0.532383276,-0.217932066,0.025)$ m. This
+  changes Box B's pose only. A sampled point is not certified reachable solely
+  by the sampling bounds; the path's IK preflight can reject an infeasible
+  sample.
+\end{itemize}
+The fixed destination and the two pickup definitions are plotted in
+\cref{fig:scene}.
+
+\begin{figure}[htbp]
+  \centering
+  \input{figures/scene_coordinates.tex}
+  \caption{World-plane schematic of the fixed Box A and example Box B pickup
+  locations. The vertical coordinate is suppressed; both pickup centers are
+  at $z=0.025$ m.}
+  \label{fig:scene}
+\end{figure}
+
+Box A's center is at $z=0.10$ m because its height is \SI{0.20}{m}. The target
+center for Box B is
+\begin{equation}
+ \pvec_{B,d}=\begin{bmatrix}0.55&0.35&0.225\end{bmatrix}^{T}\si{m},
+ \label{eq:place-target}
+\end{equation}
+which places the cube's lower face at $z=0.20$ m, the top of Box A. In the
+actual path the tool lowers to $z=0.226$ m, releases about \SI{1}{mm} above
+the target center, and the cube settles under gravity before final pose
+measurement.
+
+\section{Requirements and evidence status}
+\begin{longtable}{p{.29\textwidth}p{.31\textwidth}p{.32\textwidth}}
+\caption{Assignment requirement mapped to implementation and evidence.}\label{tab:req-map}\\
+\toprule Requirement & Implementation & Status / limitation\\\midrule\endfirsthead
+\toprule Requirement & Implementation & Status / limitation\\\midrule\endhead
+At least four degrees of freedom & Six revolute GP7 joints & Implemented in URDF; all six are commanded.\\
+Coordinate frame diagram & Standard-DH frames & Derived and independently compared to URDF FK; see \cref{ch:dh}.\\
+DH table and FK & Standard DH table plus tool transform & 104-config comparison recorded; runtime FK itself parses URDF, not DH constants.\\
+IK for target pose & Bounded SciPy least squares & Numerical solver with URDF limits; no analytic GP7 solver.\\
+Smooth trajectory / velocity control & Quintic blend, sampled Cartesian IK, trajectory action & Joint-speed cap is sampled; no measured acceleration or jerk report.\\
+Random reachable Box B & Seeded near-mode coordinate sampling & Seed 7 was tested; arbitrary samples are preflighted and can fail.\\
+Box A position & Fixed $(0.55,0.35,0)$ m & Used under lecturer's subsequent verbal clarification; original sheet says $(1,1,0)$.\\
+Upright object transfer & Fixed downward grasp rotation; orientation monitored from Gazebo pose samples & Successful simulation records; sampling is not a continuous-time proof.\\
+Gripper / grasp & Adaptive mesh gripper and detachable fixed-joint plugin & Simulated close and attachment; no demonstrated frictional or physical grasp.\\
+Report and video & This guide and prior report draft; recording checklist & Group member fields and a new screen recording remain submission work.\\
+\bottomrule
+\end{longtable}
+
+\section{What is complete versus what remains}
+The repo's validation notes record successful builds of all three ROS packages,
+six offline regression tests, 104 DH-versus-URDF FK configurations, and
+headless Gazebo far and seeded-near runs. The executed sequence included
+approach, descent, close/attach, lift, transfer, placement, release, and
+retreat. Those are simulation results with an idealized fixed-joint retention
+mechanism. No physical robot run, force-based grasp, CAD equivalence study, or
+submission video is in the repository evidence. Chapter 13 preserves the
+recorded metrics and separates them from any verification done while preparing
+this guide.
+
+\section{Scope boundaries}
+This guide explains both mathematical background and the actual choices made
+in source. It does not claim the project uses MoveIt, an analytic IK solution,
+a collision planner, physical sensors, force control, or calibrated link
+inertias. None of those appears in the working task path. ROS 2, Gazebo, and
+the Python stack interact, but the repository has no custom C++ source file;
+the C++ plugins and controller implementations are supplied by installed ROS
+and Gazebo packages.

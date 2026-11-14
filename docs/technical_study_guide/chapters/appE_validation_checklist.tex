@@ -1,0 +1,48 @@
+\chapter{Validation Summary and Assignment Checklist}
+\label{app:checklist}
+
+\section{Evidence summary}
+\begin{longtable}{p{.31\textwidth}p{.24\textwidth}p{.37\textwidth}}
+\toprule Check & Recorded status & Interpretation\\\midrule\endfirsthead
+\toprule Check & Recorded status & Interpretation\\\midrule\endhead
+Three ROS packages build & Success recorded, 14 Nov 2026 & Build configuration uses system Python executable.\\
+Offline unit regression & 6/6 pass & Motion/math/model tests only; no Gazebo startup.\\
+DH and URDF FK & 104/104 pass & Max $5.50\times10^{-16}$ m and $4.93\times10^{-16}$ rad in recorded run.\\
+Far-mode GUI & Success recorded, 11 Oct 2026 & Position error $9.47\times10^{-7}$ m; idealized grasp.\\
+Far-mode headless Gazebo & Success recorded, 14 Nov 2026 & Position error $8.88\times10^{-7}$ m; orientation under $3.80\times10^{-7}$ rad.\\
+Near-mode seed 7 headless Gazebo & Success recorded, 14 Nov 2026 & Pickup (.532383276,-.217932066,.025) m; position error $8.84\times10^{-7}$ m.\\
+Physical robot & Not verified & No hardware test or accuracy result.\\
+Contact-force grasp & Not verified & The simulation uses detachable fixed joint; mimic constraints unsupported by selected engine.\\
+Screen-recorded assignment video & Not present in evidence & Must be recorded and attached.\\
+\bottomrule
+\end{longtable}
+
+\section{Assignment requirements checklist}
+\begin{itemize}
+ \item[$\square$] Enter actual group member names and index numbers (the
+ task sheet permits at most three members).
+ \item[$\checkmark$] Six revolute robot axes exceed the minimum four DoF.
+ \item[$\checkmark$] Standard DH coordinate assignment, table, and complete
+ matrices are in this guide.
+ \item[$\checkmark$] FK and numerical IK are explained and tied to source.
+ \item[$\checkmark$] Quintic trajectory and sampled velocity cap are
+ documented with limitations.
+ \item[$\checkmark$] Reachable fixed Box A selection and later verbal
+ clarification are explicitly distinguished from original printed
+ $(1,1,0)$ m coordinate.
+ \item[$\checkmark$] Fixed Box A versus seeded/random Box B pickup modes are
+ distinguished.
+ \item[$\checkmark$] Recorded simulation runs and idealized grasp model are
+ described without physical-performance claims.
+ \item[$\square$] Create a screen recording of a GUI Gazebo task run and
+ include the actual video filename/link.
+ \item[$\square$] Ensure the submission report follows lecturer formatting
+ and that the verbal-clarification wording is accurate.
+\end{itemize}
+
+\section{Study guide versus submitted report}
+This LaTeX guide is much more detailed than the assignment's concise report
+requirement and is a learning reference. The repository's
+\file{docs/report.md} is a report draft and includes a video checklist.
+Neither text file is itself the required video. Group-specific information
+must remain blank until supplied by the group.

@@ -1,0 +1,14 @@
+\begin{tikzpicture}[>=Stealth,scale=4.1]
+  \draw[->,gray,thick] (-.30,0)--(.82,0) node[right]{world $+x$ (m)};
+  \draw[->,gray,thick] (0,-1.05)--(0,.58) node[above]{world $+y$ (m)};
+  \fill[blue!12] (.40,.20) rectangle (.70,.50);
+  \draw[blue!70!black,thick] (.40,.20) rectangle (.70,.50);
+  \node[blue!50!black,align=center] at (.55,.35){fixed Box A\\$(.55,.35)$};
+  \fill[red!75!black] (-.06874,-.92808) circle (.012);
+  \node[red!65!black,anchor=east,align=right] at (-.10,-.928){far-mode B\\$(-.06874,-.92808)$};
+  \fill[orange!85!black] (.53238,-.21793) circle (.012);
+  \node[orange!65!black,anchor=west,align=left] at (.55,-.218){near mode, seed 7\\$(.53238,-.21793)$};
+  \fill[black] (0,0) circle (.009) node[above left]{base $(0,0)$};
+  \draw[->,black,dashed] (-.06874,-.92808)--(.55,.35);
+  \draw[->,black,dashed] (.53238,-.21793)--(.55,.35);
+\end{tikzpicture}

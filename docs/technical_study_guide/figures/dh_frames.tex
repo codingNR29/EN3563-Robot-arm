@@ -1,0 +1,41 @@
+\begin{tikzpicture}[scale=1.0,>=Stealth]
+  \draw[->,gray,thick] (-.2,0)--(6.6,0) node[right]{base $+X$};
+  \draw[->,gray,thick] (0,-.2)--(0,5.5) node[above]{base $+Z$};
+  % Origins projected into X-Z; y=0 at the zero configuration.
+  \draw[very thick,gray!55] (0,0)--(0,1.65)--(.2,1.65)--(.2,3.875)--(.2,4.075)--(2.4,4.075);
+  \foreach \x/\z/\lab in {0/0/F0,.2/1.65/F1,.2/3.875/F2,.2/4.075/F3,2.4/4.075/{F4,F5,F6}} {
+    \fill (\x,\z) circle (2pt);
+    \node[anchor=west,font=\small] at (\x+.08,\z+.10) {\lab};
+  }
+  % Frame 0 and 1 axes projected in plane.
+  \draw[->,red!75!black,thick] (0,0)--(.7,0) node[right,font=\scriptsize]{$x_0=+X$};
+  \draw[->,blue!75!black,thick] (0,0)--(0,.55) node[above,font=\scriptsize]{$z_0=+Z$};
+  \draw[->,red!75!black,thick] (.2,1.65)--(.85,1.65) node[right,font=\scriptsize]{$x_1=+X$};
+  \draw ( .2,1.65) circle (0.10); \fill (.2,1.65) circle (1.5pt);
+  \node[anchor=west,font=\scriptsize,blue!75!black] at (.32,1.86){$z_1=+Y$ out};
+  % F2 has z into page; x2 is vertical.
+  \draw[->,red!75!black,thick] (.2,3.875)--(.2,4.35) node[above,font=\scriptsize]{$x_2=+Z$};
+  \draw (.2,3.875) circle (.10); \draw (.15,3.825)--(.25,3.925); \draw (.15,3.925)--(.25,3.825);
+  \node[anchor=west,font=\scriptsize,blue!75!black] at (.32,3.70){$z_2=-Y$ into};
+  % Frame 3 x3=+Z, z3=-X.
+  \draw[->,red!75!black,thick] (.2,4.075)--(.2,4.55);
+  \draw[->,blue!75!black,thick] (.2,4.075)--(-.38,4.075) node[left,font=\scriptsize]{$z_3=-X$};
+  \node[anchor=west,font=\scriptsize] at (.32,4.52){$x_3=+Z$};
+  % Wrist center: axes differ in 3D while origin coincides.
+  \draw[->,red!75!black,thick] (2.4,4.075)--(2.4,4.55);
+  \draw[->,blue!75!black,thick] (2.4,4.075)--(1.9,4.075);
+  \node[anchor=west,font=\scriptsize] at (2.5,4.48){$x_{4,5,6}=+Z$};
+  \node[anchor=north,font=\scriptsize,align=center] at (2.4,3.96){$z_4=-Y$; $z_5,z_6=-X$\\same wrist origin};
+  \node[anchor=north west,font=\scriptsize,align=left] at (3.5,2.9){
+    $F_0=(0,0,0)$\\
+    $F_1=(.040,0,.330)$\\
+    $F_2=(.040,0,.775)$\\
+    $F_3=(.040,0,.815)$\\
+    $F_{4,5,6}=(.480,0,.815)$\\[2mm]
+    $y_i=z_i\times x_i$\\
+    Circled dot: out of page\\
+    Cross: into page\\[2mm]
+    DH frame 6 is not the grasp frame.\\
+    Use the separate $T_{6g}$ tool transform.
+  };
+\end{tikzpicture}

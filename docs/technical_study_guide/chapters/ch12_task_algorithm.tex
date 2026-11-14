@@ -1,0 +1,133 @@
+\chapter{Complete Pick-and-Place Algorithm}
+\label{ch:task}
+
+\section{Task target definitions}
+The launch arguments are \code{headless} (default false), \code{run_task}
+(default true), \code{pickup_mode} (default \code{far}), and \code{seed}
+(default 7). The launch code sets the sampled/optimized Box B coordinates into
+the task node's \code{pickup_x} and \code{pickup_y} parameters. The node
+sets $z=0.025$ m for its pickup center. It sets destination to
+$(place_x,place_y,0.225)$ m with defaults $(0.55,0.35,0.225)$.
+
+The goal orientation is fixed to $R_{down}$. The object starts upright check
+uses quaternion rotation magnitude and rejects initial deviation above 0.01
+rad. The pickup must match the configured pose within \SI{0.01}{m} before
+planning. This is a scene-level consistency check; it is not a vision-based
+object detection algorithm.
+
+\section{Chronological execution}
+\Cref{fig:workflow} shows the decisions and sequencing. Below each phase is
+connected to actual class/function names and observable behavior.
+
+\begin{figure}[htbp]
+\centering\resizebox{.75\textwidth}{!}{\input{figures/workflow.tex}}
+\caption{Feedback checks and preflight ordering in the task node. All path
+segments are solved before the first arm trajectory is sent.}
+\label{fig:workflow}
+\end{figure}
+
+\begin{enumerate}
+ \item \textbf{Start world and robot.} \code{pick_place.launch.py} chooses
+ pickup, writes temporary SDF, applies \code{task_description}, starts
+ Gazebo/clock bridge/state publisher/spawn, and spawns three controllers. A
+ failed controller-spawner process triggers launch shutdown. The task node is
+ conditionally started only after the controller process exits successfully.
+
+ \item \textbf{Wait for feedback.} \code{PickPlace.run} waits up to 60 s for
+ complete arm joint feedback, the Box B model pose, and a nonzero simulated
+ clock. It then waits up to 30 s for the arm trajectory action server. Joint
+ feedback is reordered by the exact \code{ARM_JOINTS} names.
+
+ \item \textbf{Reset/validate grasp state.} The node asks the Gazebo plugin to
+ detach and confirms the state before motion. It waits for settling, compares
+ object position against \code{self.pickup} within 1 cm, stores initial
+ quaternion, and checks upright within 0.01 rad.
+
+ \item \textbf{Choose above-pickup pose and waypoints.}
+ \code{carry_waypoints(pickup,destination)} decides whether pickup radius
+ exceeds 0.80 m. Near pickup goes to z=0.40 m above the cube. Far pickup uses
+ z=0.10 m initially and adds the inward waypoint $(0.45,-0.45,0.40)$ m.
+ Transfer is at z=0.40 m; lowering ends at destination plus 1 mm in z.
+
+ \item \textbf{Solve and preflight.} The node solves the above-pickup IK with
+ deterministic restarts, then generates all waypoint Cartesian segments in
+ sequence, seeding each from the preceding endpoint. Any unreachable pose,
+ bad starting orientation, or discontinuous joint branch raises before arm
+ movement. This preflight order is a useful defense against mid-task IK failure.
+
+ \item \textbf{Open and approach.} \code{fingers(0.15)} confirms a command
+ subscriber and live driver feedback, interpolates the opening command, and
+ checks the measured result. \code{joint_segment} moves from measured current
+ $q$ to the above-pickup configuration. The first Cartesian segment descends
+ to Box B.
+
+ \item \textbf{Check grasp point, close, attach.} The current FK grasp-frame
+ point must be within \SI{4}{mm} of Box B's center. If not, grasp is refused.
+ The node closes the driver to $-0.162$ rad, asks the fixed-joint plugin to
+ attach, and waits up to 8 s for \code{attached}. It sets its carrying flag
+ only after confirmation.
+
+ \item \textbf{Lift and transfer.} The node executes the remaining path
+ segments except the final retreat. These are vertical lift; optional far
+ inward/raise; upright transfer; and lowering to z=0.226 m. After each arm
+ goal it checks controller success and joint position feedback. While
+ carrying, it also checks fresh Box B pose, attached state, and maximum
+ sampled orientation error at most 1 degree.
+
+ \item \textbf{Release and retreat.} Before detach, the current Box B center
+ must be within 8 mm of destination. The task confirms detach, clears its
+ carrying flag, opens the gripper, and executes the last waypoint back to the
+ overhead transfer pose. It then waits 2 s in simulated time for settling.
+
+ \item \textbf{Final acceptance.} The latest pose must be fresher than 1 s;
+ Euclidean position error must not exceed 8 mm; orientation change from the
+ original object rotation must not exceed 1 degree. On success it logs
+ \code{PICK AND PLACE VERIFIED}. An optional nonempty \code{result_file}
+ parameter writes JSON, but the launch does not set this parameter by default.
+\end{enumerate}
+
+\section{Task pseudocode}
+\begin{algorithm}[htbp]
+\caption{Source-faithful outline of \code{PickPlace.run}}
+\label{alg:pick-place}
+\begin{algorithmic}[1]
+\State wait for joint, Box B pose, simulation clock, and arm action server
+\State request and confirm initial detach; validate configured pickup and upright pose
+\State $above,waypoints\gets\texttt{carry\_waypoints}(pickup,destination)$
+\State $q_{above}\gets\texttt{IK}(above,q_{measured},restart=\texttt{true})$
+\State precompute every Cartesian segment, warm-starting each from prior endpoint
+\State open gripper; execute quintic joint-space approach
+\State execute first segment (descend); reject if grasp frame is farther than 4 mm
+\State close driver to $-0.162$ rad; attach object and confirm Gazebo state
+\For{each path after descent except final retreat}
+  \State send \code{FollowJointTrajectory} action and verify result/feedback
+  \State if carrying, check fresh pose, attached state, and sampled orientation error
+\EndFor
+\State reject if pre-release object center is more than 8 mm from destination
+\State detach; open; execute retreat; settle for 2 s
+\If{final pose fresh, position error $\leq 8$ mm, angle $\leq1^\circ$}
+  \State report verified success and optional JSON
+\Else
+  \State report failure
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\section{Move helper and ROS messages}
+\code{PickPlace.move} takes $(t,qs,vs)$ and a label. It builds a
+\code{FollowJointTrajectory.Goal}, assigns six joint names, and for each sample
+converts floating-point seconds to integer nanoseconds in
+\code{Duration(sec,nanosec)}. It waits for server acceptance and result,
+cancels the goal if waiting raises, and rejects non-success action codes. Once
+successful, it waits 0.2 s, then verifies measured joints against the final
+sample within a max-coordinate error of 0.015 rad. The carrying feedback test
+is applied after each move.
+
+\section{Failure behavior and safety scope}
+The \code{/gp7/stop} callback sets a cancellation flag and cancels an active
+goal. A wait notices the flag and raises, retaining an attached object if the
+task was carrying. The outer handler attempts cancellation and exits with
+failure. This is a simulation stop/cancel interface; it is not a certified
+emergency stop, safe torque off, or physical risk-reduction function. After a
+cancellation while attached, the documented safe operational response for
+this simulation is to restart the scene before another task.

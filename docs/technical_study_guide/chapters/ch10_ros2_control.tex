@@ -1,0 +1,124 @@
+\chapter{ROS 2 Controllers and Communication}
+\label{ch:ros2}
+
+\section{Nodes, graph, and interfaces}
+ROS 2 nodes are independent processes or components connected by typed
+interfaces. Topics stream state/events, services perform request-response
+operations, and actions represent longer tasks with acceptance, feedback,
+completion, and cancellation. The project uses all three general styles in
+its ecosystem: topics for joint/gripper/stop streams, the
+\code{FollowJointTrajectory} action for arm motion, and controller-manager
+services for inspection. In the task path, the detachable-joint endpoints are
+Gazebo Transport topics, not ROS services. ROS 2's own guide explains the
+topic/service/action distinction \cite{ros2_interfaces}.
+
+\section{Controller manager and hardware interfaces}
+The URDF instantiates the external Gazebo simulated hardware system. The YAML
+sets controller-manager update rate to \SI{100}{Hz} and simulation time. It
+loads:
+\begin{enumerate}
+ \item \code{joint_state_broadcaster/JointStateBroadcaster};
+ \item \code{joint_trajectory_controller/JointTrajectoryController} for
+ all six arm joints;
+ \item \code{position_controllers/JointGroupPositionController} for the
+ single \code{gripper_driver} joint.
+\end{enumerate}
+The arm controller claims a \code{position} command interface and reads
+\code{position} and \code{velocity} state interfaces. The gripper position
+controller receives an array with one driver position. The five mimic joints
+have state interfaces but no direct command interface in the URDF.
+
+The joint trajectory controller exposes an action endpoint
+\begin{center}\code{/arm_controller/follow_joint_trajectory}\end{center}
+using \code{control_msgs/action/FollowJointTrajectory}. The project sends a
+joint-name list and time-stamped \code{JointTrajectoryPoint} values with
+positions and velocities. It checks acceptance, terminal status, action error
+code, then compares final joint feedback with the final commanded point.
+Controller package documentation is cited for interface semantics, while the
+project YAML/code is authoritative for what is configured here
+\cite{ros2_control_jtc}.
+
+\section{ROS topics and message types}
+\begin{longtable}{p{.39\textwidth}p{.26\textwidth}p{.29\textwidth}}
+\caption{Important ROS interfaces visible in project source.}\label{tab:ros-interfaces}\\
+\toprule Name & Type & Actual use\\\midrule\endfirsthead
+\toprule Name & Type & Actual use\\\midrule\endhead
+\code{/joint_states} & \code{sensor_msgs/msg/JointState} & Broadcaster feedback; task and manual arm node read arm positions; task also reads gripper driver angle.\\
+\code{/arm_controller/follow_joint_trajectory} & \code{control_msgs/action/FollowJointTrajectory} & Task and manual arm/demo nodes send multi-point arm goals.\\
+\code{/gripper_controller/commands} & \code{std_msgs/msg/Float64MultiArray} & Task and manual gripper node publish the single driver setpoint.\\
+\code{/gp7/stop} & \code{std_msgs/msg/Empty} & Task node requests cancellation; manual arm node also handles stop. Not a safety-rated emergency stop.\\
+\code{/gp7/goal_index} & \code{std_msgs/msg/Int32} & Manual arm preset selector (0--3), not used by assignment task node.\\
+\code{/gp7/gripper_cmd} & \code{std_msgs/msg/Float64} & Manual gripper-node input, translated into controller command array.\\
+\code{/clock} & \code{rosgraph_msgs/msg/Clock} & Gazebo clock bridged to ROS; nodes use simulation time.\\
+\code{/controller_manager/list_controllers} & ListControllers service & Human-operated controller readiness check documented in README; task launch spawners wait for startup.\\
+\bottomrule
+\end{longtable}
+
+The exact action and topic names are absolute names in the source. Controller
+names in the YAML are \code{joint_state_broadcaster}, \code{arm_controller},
+and \code{gripper_controller}. The Gazebo system creates the controller
+manager. Both Gazebo launch descriptions enforce broadcaster startup before
+or alongside the command controllers; the generic launch has a process-exit
+event handler that starts arm and gripper spawners only after the broadcaster
+spawner finishes.
+
+\section{Gazebo Transport interfaces used alongside ROS}
+These endpoints are native Gazebo Transport messages, despite their topic-like
+names. The task code imports them from the vendor binding rather than through
+\code{ros_gz_bridge}:
+\begin{table}[htbp]
+\centering\small
+\caption{Gazebo Transport messages in \code{PickPlace}.}\label{tab:gz-interfaces}
+\begin{tabularx}{\textwidth}{l l X}
+\toprule Gazebo topic & Message type & Direction and purpose\\\midrule
+\code{/gp7/grasp/attach} & \code{gz.msgs.Empty} & Task publishes; detachable-joint plugin attaches Box B.\\
+\code{/gp7/grasp/detach} & \code{gz.msgs.Empty} & Task publishes; plugin removes attachment.\\
+\code{/gp7/grasp/state} & \code{gz.msgs.StringMsg} & Plugin publishes text state such as \code{attached} / \code{detached}; task subscribes.\\
+\code{/model/box_b/pose} & \code{gz.msgs.Pose_V} & SDF pose-publisher system sends model pose vector; task subscribes and selects the \code{box_b} entry.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+The launch does not bridge these four topics into ROS. Only the simulation
+clock has the explicit ROS--Gazebo bridge in the task launch. This split is
+why a ROS topic listing alone does not show every interface used in the task.
+
+\section{Robot-state publisher and TF}
+\code{robot_state_publisher} receives the robot description and joint
+states. It publishes fixed transforms for fixed URDF joints and dynamic
+transforms for actuated joints. The task launch sets \code{use_sim_time}
+and creates a \code{ros_gz_bridge} parameter bridge for \code{/clock}.
+RViz in the separate display launch reads these transforms to render the URDF.
+The assignment task itself does not rely on an RViz node.
+
+\section{Manual control nodes versus the task node}
+\code{ArmControllerNode} in \file{scripts/arm_controller_node.py} listens
+for one of four preset indices, subscribes to joint states, and sends action
+goals. Its stop callback cancels the active action and attempts a hold using
+the last observed joint position. \code{GripperControllerNode} accepts a
+simple scalar, checks finite value and $[-0.5,0.15]$ bounds, and publishes a
+one-element array. \code{DemoSequenceNode} runs scripted joint waypoints and
+gripper commands. These are separate manual/demo utilities; none performs
+the integrated feedback-checked Box A/Box B workflow.
+
+The task node itself bypasses these two wrapper nodes: it publishes directly
+to \code{/gripper_controller/commands}, sends the arm action directly, and
+subscribes to \code{/gp7/stop}. This matters when tracing nodes in a graph:
+the arm and gripper wrappers need not be running during \code{pick_place.launch.py}.
+
+\section{Communication diagram}
+\Cref{fig:architecture} shows launch, state publisher, controller manager,
+Gazebo, and the task. The clock path is bridged from Gazebo Transport into
+ROS. Conversely, \code{pick_place_node.py} creates its own
+\code{gz.transport13.Node}; it directly advertises and subscribes to grasp
+and model-pose topics. Therefore not every connection in the task is a ROS 2
+topic, and topic names alone do not identify the middleware type.
+
+\section{Command, feedback, and failure handling}
+An action goal has a lifecycle: the controller can reject it; an accepted
+goal can finish with a result code; or the task can request cancellation. The
+task's \code{move} function waits for the goal response, stores the active
+handle, waits with a duration-based timeout, cancels on exception, checks
+success, waits for settling, and compares live joint feedback. During carrying,
+it also checks that pose and grasp-state feedback remain fresh and that the
+largest observed orientation error remains within one degree. This adds
+application-level checking around the controller action.

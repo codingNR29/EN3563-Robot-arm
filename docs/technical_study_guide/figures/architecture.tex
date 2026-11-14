@@ -1,0 +1,30 @@
+\begin{tikzpicture}[
+  node distance=9mm and 13mm,
+  block/.style={draw,rounded corners,align=center,minimum width=31mm,minimum height=11mm,fill=blue!5},
+  data/.style={draw,rounded corners,align=center,minimum width=28mm,minimum height=10mm,fill=green!6},
+  gz/.style={draw,rounded corners,align=center,minimum width=34mm,minimum height=11mm,fill=orange!10},
+  link/.style={-{Stealth[length=2mm]},thick},
+  bidir/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]},thick}
+]
+\node[block] (launch) {ROS 2 launch\\\code{pick_place.launch.py}};
+\node[block,right=of launch] (rsp) {\code{robot_state_publisher}\\URDF + \code{/joint_states}};
+\node[gz,right=of rsp] (gzsim) {Gazebo Harmonic\\physics + \code{gz_ros2_control}};
+\node[block,below=of launch] (task) {\code{gp7_pick_place}\\task sequencer};
+\node[data,right=of task] (motion) {\code{Kinematics} +\\\code{carry_waypoints}};
+\node[data,right=of motion] (controllers) {Controller manager\\arm + gripper controllers};
+\node[gz,below=of gzsim] (gztransport) {Gazebo Transport\\pose + grasp state};
+\node[block,below=of controllers] (rviz) {RViz2\\optional display only};
+
+\draw[link] (launch) -- (rsp);
+\draw[link] (launch) -- (gzsim);
+\draw[link] (launch) -- (task);
+\draw[link] (task) -- node[above,sloped,font=\scriptsize]{target poses} (motion);
+\draw[link] (motion) -- node[above,sloped,font=\scriptsize]{sampled \code{q, qdot}} (task);
+\draw[link] (task) -- node[above,font=\scriptsize]{trajectory action} (controllers);
+\draw[bidir] (controllers) -- node[above,sloped,font=\scriptsize]{commands / states} (gzsim);
+\draw[link] (gzsim) -- node[right,font=\scriptsize,align=left]{\code{/clock} bridge\\\code{/joint_states}} (rsp);
+\draw[bidir] (gzsim) -- node[right,font=\scriptsize,align=left]{\code{/model/box_b/pose}\\attach, detach, state} (gztransport);
+\draw[link] (gztransport.west) -| (task.south east);
+\draw[link,dashed] (rsp.south) |- (rviz.west);
+\node[font=\scriptsize,below=1mm of rviz] {not started by task launch};
+\end{tikzpicture}

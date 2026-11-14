@@ -1,0 +1,113 @@
+\chapter{Forward Kinematics}
+\label{ch:fk}
+
+\section{What FK answers}
+Forward kinematics maps known joint coordinates to the tool's position and
+orientation. Given $\qvec$, each joint contributes a rigid transform. For a
+serial chain, transforms compose by matrix multiplication because the output
+frame of one joint becomes the input frame of the next. The result belongs to
+$\SE(3)$ and has a rotation matrix and translation vector:
+\begin{equation}
+ {}^BT_g(\qvec)=
+ \begin{bmatrix}{}^BR_g(\qvec)&{}^B\pvec_g(\qvec)\\0&1\end{bmatrix}.
+ \label{eq:fk-result}
+\end{equation}
+The first three columns of the 3-by-3 block are the grasp frame's local unit
+axes expressed in base coordinates. The last column is the grasp-frame origin
+in metres.
+
+\section{Transform-chain multiplication}
+Under the standard-DH construction, FK is \cref{eq:dh-chain}:
+\begin{equation}
+ {}^BT_g=A_1A_2A_3A_4A_5A_6{}^6T_g.
+\end{equation}
+One can build intermediate poses
+\begin{equation}
+ {}^BT_1=A_1,\quad {}^BT_2=A_1A_2,\quad
+ {}^BT_3=A_1A_2A_3,\quad {}^BT_6=A_1\cdots A_6,
+\end{equation}
+then apply the fixed tool transform to obtain ${}^BT_g$. In code, matrix
+composition is associative but not commutative: swapping adjacent transforms
+changes the reference frame and the physical result.
+
+\section{Fully worked home example}
+At $q_i=0$, $v_2=-\pi/2$. The individual matrices reduce to
+\begin{align*}
+A_1&=\begin{bmatrix}1&0&0&.040\\0&0&1&0\\0&-1&0&.330\\0&0&0&1\end{bmatrix},&
+A_2&=\begin{bmatrix}0&-1&0&0\\-1&0&0&-.445\\0&0&-1&0\\0&0&0&1\end{bmatrix},\\
+A_3&=\begin{bmatrix}1&0&0&.040\\0&0&1&0\\0&-1&0&0\\0&0&0&1\end{bmatrix},&
+A_4&=\begin{bmatrix}1&0&0&0\\0&0&-1&0\\0&1&0&-.440\\0&0&0&1\end{bmatrix},\\
+A_5&=\begin{bmatrix}1&0&0&0\\0&0&1&0\\0&-1&0&0\\0&0&0&1\end{bmatrix},&A_6&=I_4.
+\end{align*}
+Multiplying the first six produces the DH wrist-frame origin $(0.480,0,0.815)$
+m and orientation $C_{3\times3}$. Applying ${}^6T_g$ moves the grasp point
+approximately $(+0.225980,-0.012300,-0.000911)$ m in base coordinates. Thus
+\begin{equation}
+ {}^BT_g(0)\approx
+ \begin{bmatrix}
+ 0&0&1&0.705980\\
+ 0&-1&0&-0.012300\\
+ 1&0&0&0.814089\\
+ 0&0&0&1
+ \end{bmatrix}.
+ \label{eq:home-fk}
+\end{equation}
+The tiny off-axis entries in direct floating-point URDF evaluation are caused
+by the URDF's decimal approximations to $\pi$; \cref{eq:home-fk} is rounded.
+
+\section{Worked nonzero configuration}
+The independently recorded verification example
+$\qvec=(0.4,0.6,1.2,-0.7,0.8,1.1)$ rad lies within the six arm joint limits.
+Applying the URDF chain gives the following rounded pose:
+\begin{equation}
+{}^BT_g\approx\begin{bmatrix}
+-0.857809731&-0.290135590&0.424244982&0.675035771\\
+0.156339523&-0.933613380&-0.322372473&0.161569746\\
+0.489612519&-0.210207986&0.846222302&1.166928133\\
+0&0&0&1
+\end{bmatrix}.
+\label{eq:fk-nonzero-example}
+\end{equation}
+The position result is therefore approximately
+$(0.675036,0.161570,1.166928)$ m. The rotation's column vectors remain unit
+length and mutually orthogonal up to round-off, and its determinant is one.
+This is a mathematical FK example, not a measured Gazebo pose.
+
+\section{Executable URDF FK}
+\code{gp7_motion/kinematics.py} parses the URDF into a list of transforms and
+axes in \code{Kinematics.__init__}. For each chain joint,
+\code{fk(q)} first right-multiplies the static joint origin. If the joint is
+revolute, it then right-multiplies a rotation generated from the normalized
+axis multiplied by its corresponding $q_i$. Fixed joints contribute only
+their static transform. Because the chain starts at \code{base_link} and
+ends at \code{grasp_frame}, the return value is already the base-to-grasp
+transform.
+
+No arm dimensions are duplicated in the runtime FK or IK: changing the URDF
+joint origin updates these computations. This reduces parameter drift between
+the model and planner, though it means a malformed URDF can also corrupt both
+the runtime results and any tests that reuse the same parser.
+
+\section{Independent DH agreement check}
+\file{docs/verify_dh.py} independently builds DH matrices using a separately
+stated table and reads the exact URDF fixed tool transforms. It checks four
+explicit configurations, then 100 deterministic joint vectors drawn uniformly
+between the parsed lower and upper limits using NumPy generator seed 42. It
+compares translation by Euclidean norm and rotation by the angle of the
+relative rotation. In the verification recorded on 14 November 2026, all 104
+passed with maximum errors
+\begin{equation}
+ \max_k\|p_{DH,k}-p_{URDF,k}\|_2=5.50\times10^{-16}\si{m},\qquad
+ \max_k\angle(R_{DH,k}^{T}R_{URDF,k})=4.93\times10^{-16}\si{rad}.
+\end{equation}
+These are machine-precision comparisons of two calculations for the same
+implemented URDF. They do not measure physical robot accuracy or CAD fidelity.
+
+\section{Reproduce the FK check}
+From the repository root after installing system NumPy/SciPy, use:
+\begin{lstlisting}[language=bash]
+/usr/bin/python3 docs/verify_dh.py
+\end{lstlisting}
+The script is read-only. Its current recorded output prints each explicit
+configuration's errors and the maximum over all 104. Chapter 13 distinguishes
+this mathematical check from the dynamic Gazebo run.

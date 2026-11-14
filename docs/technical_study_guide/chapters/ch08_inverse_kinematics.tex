@@ -1,0 +1,107 @@
+\chapter{Inverse Kinematics}
+\label{ch:ik}
+
+\section{From desired pose to joint coordinates}
+Inverse kinematics reverses FK. Given a desired grasp position $p_d$ and
+orientation $R_d$, find a joint vector $\qvec$ for which
+\begin{equation}
+ {}^BT_g(\qvec)\approx
+ \begin{bmatrix}R_d&p_d\\0&1\end{bmatrix}.
+\end{equation}
+There may be multiple joint configurations with the same tool pose; some
+targets have no solution inside the robot's workspace or joint limits, and
+near singular configurations the required joint changes can become very
+large. IK is consequently a constrained search, not simply inverting a square
+matrix.
+
+\section{The method actually implemented}
+The runtime calls SciPy's bounded nonlinear least-squares routine
+\code{scipy.optimize.least_squares}. For candidate $q$, it computes the
+URDF-based pose and forms a six-element residual:
+\begin{equation}
+ r(\qvec)=
+ \begin{bmatrix}
+ p_{FK}(\qvec)-p_d\\
+ \mathrm{rotvec}(R_d^TR_{FK}(\qvec))
+ \end{bmatrix}\in\R^6.
+ \label{eq:ik-residual}
+\end{equation}
+The first three terms are position error in metres. The last three terms are
+the rotation vector (axis times angle) of the relative rotation, in radians.
+The implementation concatenates these quantities without scaling or a
+separate translation/rotation weighting. Consequently the norm threshold is
+a numerical code criterion, not a dimensionally homogeneous physical metric.
+
+The solver bounds are read from URDF limits. Before each solve, the initial
+guess is clipped to lie $10^{-8}$ inside each bound, avoiding an initial
+coordinate exactly on a boundary. The solve uses at most 150 function
+evaluations and sets \code{ftol=xtol=gtol=1e-10}. It accepts a result only if
+$\|r(q)\|_2<10^{-6}$; otherwise it tries another seed or raises
+\code{ValueError}. The implementation does not provide a custom analytic
+Jacobian, collision constraints, posture cost, or task-space damping policy.
+SciPy's solver handles its internal local model and numerical derivative
+behavior according to the installed SciPy defaults.
+
+\section{Initialization and branch continuity}
+For a normal Cartesian sample, the seed is the previous sample's returned
+joint vector. This encourages a nearby solution branch and avoids restarting
+from a home posture at every millisecond-scale waypoint. The code also rejects
+a segment if the maximum adjacent joint step exceeds $0.15$ rad. This is a
+discontinuity guard, not a proof that the branch is globally optimal.
+
+When \code{restart=True}, the first guess is followed by 24 additional vectors
+sampled uniformly within the URDF limits using a deterministic NumPy random
+generator seeded to 7. The task uses restarts for its initial above-pickup
+approach IK; each later Cartesian sample is warm-started from its predecessor
+without random restarts. Multiple restart attempts improve the chance of
+finding a feasible branch but do not enumerate every IK solution.
+
+\section{Worked solver example}
+During this guide's source-based numerical check, the runtime solver was asked
+for a downward-oriented grasp at
+\begin{equation}
+ p_d=(0.55,0.35,0.40)\si{m},\qquad R_d=\mathrm{diag}(1,-1,-1),
+\end{equation}
+with zero seed and deterministic restarts. One returned solution was
+\begin{equation}
+ \qvec\approx(0.58172582,\ 0.44238155,\ 0.10901428,\ 0,\ -1.23742905,\ -0.58172582)^T\si{rad}.
+ \label{eq:ik-example}
+\end{equation}
+Substituting this vector back into runtime FK gave
+$p_{FK}=(0.55,0.35,0.40)$ m to displayed precision and orientation error
+$1.9\times10^{-16}$ rad. It is one numerical solution for this solver/version,
+not a unique closed-form answer and not a Gazebo task result. A different
+valid initial seed may select another joint configuration.
+
+\section{Singularities, unreachable poses, and limits}
+A singularity occurs when small tool motion cannot be produced by an ordinary
+small change in all independent task directions, or when the inverse mapping
+becomes ill-conditioned. The far-pickup optimizer identifies the straight
+elbow as its exact horizontal boundary. The selected point is moved inward by
+\SI{5}{mm} before route planning to leave margin for tracking and continuous
+IK. This is a model-specific constrained, downward-tool envelope, not the
+maximum radius for every orientation.
+
+Joint bounds are part of the least-squares problem. A target at $(5,5,5)$ m is
+explicitly expected to fail and is covered by an offline test. Other
+infeasible goals can fail from nonconvergence even when a simple geometric
+reach bound does not rule them out. The segment planner then aborts before
+physical motion because the task constructs all route segments before sending
+the approach trajectory.
+
+\section{What is not implemented}
+The model has a six-axis wrist geometry often associated with closed-form
+solutions, but the code does not algebraically solve shoulder/elbow/wrist
+branches. It does not build or expose an arm Jacobian, use a pseudoinverse
+update $q_{k+1}=q_k+J^+e$, optimize a nullspace objective, or perform
+collision-aware IK. Such equations are useful theory, but must not be
+presented as this project's method. The actual solver is the residual-based,
+bounded nonlinear least-squares procedure described above.
+
+\section{Connection to command generation}
+IK returns one $q$ for each Cartesian interpolation sample. The trajectory
+code places those joint vectors and estimated velocities into a sequence of
+\code{JointTrajectoryPoint} messages. The task node sends the sequence through
+the \code{FollowJointTrajectory} action and checks both the action result and
+measured joint positions when it completes. Thus successful IK alone does not
+move the robot; it produces reference states for the ROS 2 controller.

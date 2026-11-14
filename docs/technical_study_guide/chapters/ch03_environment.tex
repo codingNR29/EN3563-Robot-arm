@@ -1,0 +1,90 @@
+\chapter{Development Environment}
+\label{ch:environment}
+
+\section{Tested software stack}
+The repository's tested environment is Ubuntu 24.04, ROS 2 Jazzy, Gazebo
+Harmonic / Gazebo Sim 8, and system Python 3.12 with NumPy and SciPy. The
+validated setup uses the ROS vendor libraries for Gazebo integration and a
+matching Gazebo Transport 13 Python binding. These version choices are not
+interchangeable details: the Python extension must match the installed
+Transport library, and ROS Python packages must be imported by the same Python
+interpreter used by the sourced ROS installation.
+
+\begin{description}
+ \item[ROS 2 Jazzy] Supplies the node graph, launch system, messages, services,
+ actions, parameter handling, and ROS 2 control packages. This project uses
+ \code{rclpy}; it has no custom C++ node source.
+ \item[Gazebo Harmonic] Simulates rigid-body dynamics, gravity, collisions,
+ model poses, the robot, and the detachable-joint plugin. Gazebo Transport is
+ also used directly for pose and grasp topics.
+ \item[ros\_gz] Connects Gazebo Sim and ROS 2. In the task launch, the explicit
+ bridge is the simulation clock. The arm's ros2\_control interface is provided
+ by the external \code{gz_ros2_control} system plugin.
+ \item[RViz2] Visualizes the URDF and TF tree in the separate display launch.
+ The pick-place task does not require or launch RViz.
+ \item[Python 3.12, NumPy, SciPy] Implements URDF parsing, transform
+ composition, rotation representations, bounded nonlinear least squares,
+ constrained far-pickup optimization, sampling, and ROS nodes.
+ \item[colcon and ament] Build the three packages in one ROS workspace and
+ install package resources and Python modules.
+\end{description}
+
+The project does not include source code for a C++ controller or Gazebo system;
+those components are installed dependencies. CMake is used to configure and
+install the ROS packages, but the project packages primarily install XML,
+meshes, launch/configuration files, and Python.
+
+\section{Packages and their responsibilities}
+\begin{table}[htbp]
+\centering\small
+\caption{Three packages built from the \code{gp7_ros2/} workspace.}
+\label{tab:packages}
+\begin{tabularx}{\textwidth}{l l X X}
+\toprule Package & Build type & Main content & Runtime role\\\midrule
+\code{gp7_description} & ament CMake & URDF, GP7 STL, gripper DAE, RViz config and display launch & Robot model and visualization resources\\
+\code{gp7_gazebo} & ament CMake & SDF world, controller YAML, Gazebo launch & Simulation world and ROS/Gazebo control integration\\
+\code{gp7_ros2_pkg} & ament CMake + Python install & \code{gp7_motion}, scripts, launches, tests & Kinematics, planning, control clients, task execution\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Workspace and environment sourcing}
+A ROS workspace has source packages and generated \code{build/}, \code{install/},
+and \code{log/} trees. \code{colcon build} invokes package build systems,
+installs resources in the overlay, and records environment hooks. Sourcing
+\code{/opt/ros/jazzy/setup.bash} makes the underlay visible; sourcing
+\code{install/local_setup.bash} adds this workspace's packages. An overlay
+can inadvertently import stale Python or a different ROS build if environment
+variables such as \code{PYTHONPATH}, \code{AMENT_PREFIX_PATH}, or
+\code{LD_LIBRARY_PATH} point elsewhere.
+
+The validation notes explicitly encountered a Conda Python preceding system
+Python and therefore lacking the required NumPy installation. The proven
+commands deactivate Conda, clear stale overlay variables, source Jazzy, and
+invoke \code{/usr/bin/python3}. The project's helper
+\file{gp7_ros2/run_pick_place.sh} also clears some overlay variables and
+sources the workspace, but it does not preserve the custom Gazebo Python
+binding paths described in the README; direct launch commands are used for
+that reason.
+
+\section{Transport binding exception}
+The Python task imports \code{gz.transport13} and \code{gz.msgs10}. On the
+recorded host, matching apt packages were unavailable, so the Transport 13.5.0
+Python extension was built against the ROS vendor library while leaving the
+existing C++ library unchanged. The additional Python paths are
+\code{\$HOME/.local/gp7-gz-transport13/lib/python} and
+\code{/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python}. This is installation
+specific, not a universal requirement for every Jazzy/Harmonic machine. The
+hash-checked source tag and exact CMake commands are recorded in
+\file{docs/setup.md}; chapter 14 summarizes the reproducible setup.
+
+\section{How the tools cooperate}
+The package launch reads the installed GP7 URDF and patches package paths and
+control configuration into a task description. It starts Gazebo, publishes
+the simulated clock to ROS, spawns the model, and activates controllers. The
+Python task node requests trajectories from the controller action and
+subscribes to feedback. Gazebo's physics system advances the robot and boxes.
+The robot-state publisher derives TF transforms from the URDF plus joint
+states. RViz can consume that robot description and TF in a separate display
+session. Official ROS 2 / Gazebo integration documentation describes the
+bridge and controller concepts used here \cite{ros2_jazzy,gazebo_harmonic,ros2_control_jtc}.
