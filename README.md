@@ -50,7 +50,8 @@ CAD have not been verified. See [results and remaining work](docs/validation.md)
 Presentation preparation is tracked in
 [docs/presentation_readiness.md](docs/presentation_readiness.md). The
 [comprehensive technical study guide](docs/technical_study_guide/README.md)
-includes editable Overleaf-compatible LaTeX sources and a ZIP archive.
+includes editable Overleaf-compatible LaTeX sources and the
+[Overleaf upload ZIP](docs/technical_study_guide.zip).
 
 ## Files
 
