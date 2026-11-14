@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">GP7 standard DH coordinate frames at zero joint angles</title>
+  <desc id="desc">Side projection of the GP7 DH frame origins in the base X-Z plane, with frame axes listed in a table in base coordinates. Out-of-plane Y directions are explicitly marked.</desc>
+  <defs>
+    <marker id="arrow-x" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c43d35"/></marker>
+    <marker id="arrow-z" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2457b2"/></marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker>
+    <style>
+      text { font-family: sans-serif; fill: #202124; }
+      .title { font-size: 27px; font-weight: 700; }
+      .subtitle { font-size: 17px; fill: #45484d; }
+      .axis-label { font-size: 15px; font-weight: 700; }
+      .frame { font-size: 15px; font-weight: 700; }
+      .small { font-size: 14px; }
+      .table { font-size: 14px; }
+      .header { font-size: 14px; font-weight: 700; fill: #fff; }
+    </style>
+  </defs>
+  <rect width="1200" height="760" fill="#fff"/>
+  <text x="42" y="46" class="title">GP7 standard DH frames at q = [0, 0, 0, 0, 0, 0]</text>
+  <text x="42" y="75" class="subtitle">Schematic X–Z projection from the implemented URDF; dimensions and signed DH offsets are in metres.</text>
+
+  <rect x="35" y="100" width="545" height="570" rx="10" fill="#f7f9fc" stroke="#c9d2df"/>
+  <text x="58" y="130" font-size="18" font-weight="700">Origins in the base X–Z plane</text>
+  <text x="58" y="154" class="small">All origins have y = 0 at the home pose. The x-axis is horizontal; z is vertical.</text>
+
+  <!-- Projection scale: x=100+650*x_m; y=570-570*z_m -->
+  <line x1="105" y1="570" x2="510" y2="570" stroke="#555" stroke-width="2" marker-end="url(#arrow-gray)"/>
+  <line x1="105" y1="570" x2="105" y2="205" stroke="#555" stroke-width="2" marker-end="url(#arrow-gray)"/>
+  <text x="515" y="576" class="axis-label">base +X</text>
+  <text x="81" y="195" class="axis-label">base +Z</text>
+  <polyline points="105,570 105,382 131,382 131,128 131,106 412,106" fill="none" stroke="#c5cbd3" stroke-width="5"/>
+  <line x1="131" y1="382" x2="131" y2="117" stroke="#c5cbd3" stroke-width="5"/>
+  <line x1="131" y1="106" x2="412" y2="106" stroke="#c5cbd3" stroke-width="5"/>
+  <text x="250" y="470" class="small" fill="#5c626a">base / shoulder rise</text>
+  <text x="145" y="255" class="small" fill="#5c626a">upper arm</text>
+  <text x="205" y="94" class="small" fill="#5c626a">wrist center line</text>
+
+  <!-- Frame 0 at (0,0,0): x0=+X, z0=+Z -->
+  <circle cx="105" cy="570" r="7" fill="#111"/>
+  <line x1="105" y1="570" x2="174" y2="570" stroke="#c43d35" stroke-width="3" marker-end="url(#arrow-x)"/>
+  <line x1="105" y1="570" x2="105" y2="510" stroke="#2457b2" stroke-width="3" marker-end="url(#arrow-z)"/>
+  <text x="91" y="599" class="frame">F0 (0, 0, 0)</text>
+  <text x="177" y="575" class="axis-label" fill="#c43d35">x0</text>
+  <text x="109" y="507" class="axis-label" fill="#2457b2">z0</text>
+
+  <!-- Frame 1 at (.040,0,.330): x1=+X, z1=+Y out of page -->
+  <circle cx="131" cy="382" r="7" fill="#111"/>
+  <line x1="131" y1="382" x2="197" y2="382" stroke="#c43d35" stroke-width="3" marker-end="url(#arrow-x)"/>
+  <circle cx="131" cy="382" r="17" fill="none" stroke="#2457b2" stroke-width="3"/>
+  <circle cx="131" cy="382" r="5" fill="#2457b2"/>
+  <text x="201" y="388" class="axis-label" fill="#c43d35">x1</text>
+  <text x="144" y="364" class="axis-label" fill="#2457b2">z1 = +Y (out)</text>
+  <text x="145" y="410" class="frame">F1 (.040, 0, .330)</text>
+
+  <!-- Frame 2 at (.040,0,.775): x2=+Z, z2=-Y into page -->
+  <circle cx="131" cy="128" r="7" fill="#111"/>
+  <line x1="131" y1="128" x2="131" y2="88" stroke="#c43d35" stroke-width="3" marker-end="url(#arrow-x)"/>
+  <circle cx="131" cy="128" r="17" fill="none" stroke="#2457b2" stroke-width="3"/>
+  <circle cx="131" cy="128" r="5" fill="#fff" stroke="#2457b2" stroke-width="2"/>
+  <text x="143" y="97" class="axis-label" fill="#c43d35">x2 = +Z</text>
+  <text x="151" y="151" class="axis-label" fill="#2457b2">z2 = -Y (in)</text>
+  <text x="49" y="183" class="frame">F2 (.040, 0, .775)</text>
+
+  <!-- Frame 3 origin at (.040,0,.815), x3=+Z; z3=-X -->
+  <circle cx="131" cy="106" r="7" fill="#111"/>
+  <line x1="131" y1="106" x2="131" y2="76" stroke="#c43d35" stroke-width="3" marker-end="url(#arrow-x)"/>
+  <line x1="131" y1="106" x2="91" y2="106" stroke="#2457b2" stroke-width="3" marker-end="url(#arrow-z)"/>
+  <text x="48" y="204" class="frame">F3 (.040, 0, .815)</text>
+  <text x="137" y="80" class="axis-label" fill="#c43d35">x3=+Z</text>
+  <text x="42" y="101" class="axis-label" fill="#2457b2">z3=-X</text>
+
+  <!-- Wrist DH frames share an origin; their y axes are perpendicular in 3D. -->
+  <circle cx="412" cy="106" r="9" fill="#111"/>
+  <line x1="412" y1="106" x2="412" y2="76" stroke="#c43d35" stroke-width="3" marker-end="url(#arrow-x)"/>
+  <line x1="412" y1="106" x2="373" y2="106" stroke="#2457b2" stroke-width="3" marker-end="url(#arrow-z)"/>
+  <text x="421" y="82" class="axis-label" fill="#c43d35">x4, x5, x6 = +Z</text>
+  <text x="303" y="133" class="axis-label" fill="#2457b2">z4 = -Y; z5,z6 = -X</text>
+  <text x="351" y="162" class="frame">F4 = F5 = F6 origin</text>
+  <text x="338" y="184" class="small">(.480, 0, .815)</text>
+
+  <line x1="59" y1="630" x2="98" y2="630" stroke="#c43d35" stroke-width="3" marker-end="url(#arrow-x)"/>
+  <text x="107" y="635" class="small">local +x_i</text>
+  <line x1="225" y1="630" x2="264" y2="630" stroke="#2457b2" stroke-width="3" marker-end="url(#arrow-z)"/>
+  <text x="273" y="635" class="small">local +z_i</text>
+  <circle cx="407" cy="630" r="13" fill="none" stroke="#555" stroke-width="2"/><circle cx="407" cy="630" r="4" fill="#555"/>
+  <text x="428" y="635" class="small">out of page; ⊗ means into page</text>
+
+  <rect x="600" y="100" width="565" height="570" rx="10" fill="#fff" stroke="#c9d2df"/>
+  <text x="624" y="130" font-size="18" font-weight="700">Local frame axes expressed in base coordinates</text>
+  <rect x="620" y="151" width="525" height="34" fill="#34445b"/>
+  <text x="632" y="174" class="header">Frame</text><text x="697" y="174" class="header">Origin (m)</text>
+  <text x="850" y="174" class="header">+x_i</text><text x="934" y="174" class="header">+y_i</text><text x="1031" y="174" class="header">+z_i</text>
+  <g class="table">
+    <rect x="620" y="185" width="525" height="42" fill="#f2f5f9"/><text x="632" y="211">F0</text><text x="697" y="211">(0, 0, 0)</text><text x="850" y="211">+X</text><text x="934" y="211">+Y</text><text x="1031" y="211">+Z</text>
+    <rect x="620" y="227" width="525" height="42" fill="#fff"/><text x="632" y="253">F1</text><text x="697" y="253">(.040, 0, .330)</text><text x="850" y="253">+X</text><text x="934" y="253">-Z</text><text x="1031" y="253">+Y ⊙</text>
+    <rect x="620" y="269" width="525" height="42" fill="#f2f5f9"/><text x="632" y="295">F2</text><text x="697" y="295">(.040, 0, .775)</text><text x="850" y="295">+Z</text><text x="934" y="295">-X</text><text x="1031" y="295">-Y ⊗</text>
+    <rect x="620" y="311" width="525" height="42" fill="#fff"/><text x="632" y="337">F3</text><text x="697" y="337">(.040, 0, .815)</text><text x="850" y="337">+Z</text><text x="934" y="337">+Y ⊙</text><text x="1031" y="337">-X</text>
+    <rect x="620" y="353" width="525" height="42" fill="#f2f5f9"/><text x="632" y="379">F4</text><text x="697" y="379">(.480, 0, .815)</text><text x="850" y="379">+Z</text><text x="934" y="379">-X</text><text x="1031" y="379">-Y ⊗</text>
+    <rect x="620" y="395" width="525" height="42" fill="#fff"/><text x="632" y="421">F5</text><text x="697" y="421">(.480, 0, .815)</text><text x="850" y="421">+Z</text><text x="934" y="421">+Y ⊙</text><text x="1031" y="421">-X</text>
+    <rect x="620" y="437" width="525" height="42" fill="#f2f5f9"/><text x="632" y="463">F6</text><text x="697" y="463">(.480, 0, .815)</text><text x="850" y="463">+Z</text><text x="934" y="463">+Y ⊙</text><text x="1031" y="463">-X</text>
+  </g>
+  <line x1="620" y1="185" x2="1145" y2="185" stroke="#c9d2df"/><line x1="620" y1="479" x2="1145" y2="479" stroke="#c9d2df"/>
+  <text x="628" y="517" class="small">⊙ points out of the page (+base Y); ⊗ points into the page (-base Y).</text>
+  <text x="628" y="545" class="small">Each row is a right-handed frame: y_i = z_i × x_i.</text>
+  <text x="628" y="573" class="small">Frames 4–6 share the wrist-center origin because the three wrist axes intersect.</text>
+  <text x="628" y="601" class="small">The grasp_frame is offset from DH frame 6 by the separate fixed T6_grasp transform.</text>
+  <text x="628" y="642" class="small" font-weight="700">See docs/kinematics.md for DH parameter derivation and FK verification.</text>
+</svg>

@@ -9,12 +9,14 @@ GP7 model with an adaptive two-finger gripper.
 The [task sheet](Task_sheet.pdf) asks for a robot with at least four degrees of
 freedom, labeled coordinate frames, a DH table, forward and inverse kinematics,
 and a pick-and-place task with unchanged object orientation and smooth motion.
-It specifies Box A at (1, 1, 0), which is outside this robot's reachable
-workspace from the origin. Existing project notes report that the lecturer
-permits any reachable Box A position; confirm that permission for the report.
-The current reachable scene uses the coordinates below and does not meet the
-printed (1, 1, 0) requirement. Submission also requires a report and a
-demonstration video.
+It prints Box A at (1, 1, 0), outside this robot's reachable workspace from the
+origin. After the sheet was issued, the lecturer verbally clarified that a
+reachable pickup location may be used. Under that subsequent verbal
+clarification, the fixed Box A at (0.55, 0.35, 0) used here is acceptable. This
+clarification is not written in the assignment sheet; no written permission is
+claimed. Seeded near-mode positions are randomized Box B test pickup positions,
+not Box A placements. Submission also requires a report and demonstration
+video.
 
 The current implementation uses the alternate reachable scene below.
 Positions are in metres, in the world/base frame.
@@ -23,9 +25,9 @@ Positions are in metres, in the world/base frame.
 | --- | --- |
 | Robot base | (0, 0, 0) |
 | Box A dimensions | 0.30 × 0.30 × 0.20 |
-| Box A ground position | (0.55, 0.35, 0); model center z = 0.10 |
+| Fixed Box A ground position | (0.55, 0.35, 0); model center z = 0.10 |
 | Box B dimensions | 0.05 × 0.05 × 0.05 |
-| Default far pickup center | Approximately (-0.068740764, -0.928078308, 0.025) |
+| Default far-mode Box B pickup center | Approximately (-0.068740764, -0.928078308, 0.025) |
 | Placement target, Box B center | (0.55, 0.35, 0.225) |
 
 `pickup_mode:=far` optimizes the horizontal ground-grasp radius while keeping
@@ -33,17 +35,18 @@ the tool pointing down. The calculated boundary is about 0.935621 m; the box
 starts 5 mm inside it at radius 0.930621 m. This is a model-specific orientation
 constraint, not the reach of every possible pose. The far pickup is not random.
 
-`pickup_mode:=near seed:=7` instead samples x in [0.50, 0.60] and y in
-[-0.23, -0.15]. The seed makes that random placement repeatable. Offline tests
-cover this path, but a successful Gazebo run in near mode has not been verified
-in the recorded validation.
+`pickup_mode:=near seed:=7` randomizes the **Box B pickup** x in [0.50, 0.60]
+and y in [-0.23, -0.15]. The seed makes this pickup repeatable and does not
+randomize the fixed Box A position. A successful Gazebo run in near mode is
+recorded in [validation](docs/validation.md).
 
 A GUI run of the far-pickup task succeeded on 11 October 2026. Robot spawning,
 all three active controllers, ROS communication, and Gazebo Python transport
 communication were also checked. The DH model agrees with URDF-based FK to
-numerical roundoff. A submitted report, labeled frame drawing, video, physical
-grasp reliability, and equivalence to the original CAD have not been verified.
-See [results and remaining work](docs/validation.md).
+numerical roundoff. The report draft and labeled frame drawing are in
+[docs/report.md](docs/report.md) and [docs/coordinate_frames.svg](docs/coordinate_frames.svg).
+A video recording, physical grasp reliability, and equivalence to the original
+CAD have not been verified. See [results and remaining work](docs/validation.md).
 
 ## Files
 

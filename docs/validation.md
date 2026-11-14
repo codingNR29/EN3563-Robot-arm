@@ -23,8 +23,9 @@ A second headless run exercised seeded near mode (`seed:=7`) at pickup center
 `(0.532383276, -0.217932066, 0.025) m`. It completed the same sequence and
 emitted `PICK AND PLACE VERIFIED`, with `8.84e-7 m` placement error and
 `2.19e-6 rad` final orientation error. This verifies the implemented seeded
-reachable-pickup path in Gazebo; it does not satisfy the task sheet's printed
-Box A coordinate.
+reachable-pickup path in Gazebo. The destination uses the reachable Box A
+position covered by the lecturer's subsequent verbal clarification; it is not
+the coordinate printed in the original sheet.
 
 Gazebo also reported that its selected physics engine does not support mimic
 constraints. The simulated grasp plugin still confirmed attach and detach, and
@@ -35,20 +36,21 @@ The first attempt in this session failed before motion because the active
 Conda Python was first on `PATH` and did not provide NumPy. Prepending
 `/usr/bin` selected the tested system Python and the complete run then passed.
 
-## Box A coordinate in the assignment
+## Box A coordinate and lecturer clarification
 
 The supplied `Task_sheet.pdf` specifies Box A at `(1, 1, 0)` and asks for Box B
 to be placed at its top-surface center. From a base at the origin, that point
 has a horizontal radius of `sqrt(2) = 1.414 m`. The implemented arm geometry
 has a conservative horizontal reach bound below `1.03 m` even before applying
-joint limits, so this specified target is unreachable. The current simulation
-uses Box A at `(0.55, 0.35, 0)`, as listed in the scene table in `README.md`.
-Existing project notes report that the lecturer permitted any reachable Box A
-location, but that permission is not stated in the supplied task sheet and
-could not be independently confirmed from repository materials in this
-session. Confirm that permission for the final submission, or obtain an
-approved change to the robot placement/assignment coordinates; do not describe
-the current scene as satisfying the printed `(1, 1, 0)` coordinate.
+joint limits, so this specified target is unreachable. **After the assignment
+sheet was issued, the lecturer verbally clarified that a reachable pickup
+location may be used.** Under that subsequent verbal clarification, the fixed
+Box A ground position `(0.55, 0.35, 0)` used in this simulation is acceptable.
+The clarification is not written in the supplied assignment sheet; no written
+permission is claimed. State both facts in the report and identify the
+clarification as verbal. Random or seeded near-mode coordinates refer to Box
+B's pickup pose and do not change Box A. Default far-mode pickup is a separate
+model-optimized Box B test pose.
 
 ## Observed run
 
@@ -88,8 +90,9 @@ center height, then allowed to settle before final verification.
   [revalidation results](#revalidation-on-14-november-2026).
 
 The seeded near-mode route has now been checked both offline and in Gazebo.
-A completed submission report, a screen recording, CAD equivalence, and
-physical robot results have not been verified or claimed.
+A report draft, labeled coordinate frame diagram, and video checklist are now
+included in [the technical report](report.md). A screen recording, CAD
+equivalence, and physical robot results have not been verified or claimed.
 
 ## Limitations
 
@@ -108,25 +111,19 @@ velocity, acceleration, and jerk plots are not available in the recorded log.
 The DH comparison proves agreement with the implemented URDF, not its original
 SolidWorks geometry or manufacturer specifications.
 
-## Remaining report requirements
+## Report and submission status
 
-The lecturer permits any reachable Box A position. State that permission and
-the selected (0.55, 0.35, 0) ground position in the report. The original task
-sheet asks for a random reachable pickup: far mode is optimized, whereas near
-mode is seeded random. A separate near-mode recording can address that part.
+The task sheet prints Box A at `(1, 1, 0)`; the lecturer's subsequent
+clarification allowing a reachable pickup is verbal. Report the fixed Box A
+position `(0.55, 0.35, 0)` separately from the randomized/seeded Box B near-mode
+test pickups. Record the GUI demonstration using the checklist in
+[report.md](report.md#gazebo-demonstration-video-checklist).
 
-The group's submission still needs:
-
-1. Member index numbers and a concise explanation of the implementation.
-2. Labeled frame diagrams consistent with the documented DH convention.
-3. The DH table, individual FK matrices, base/tool transforms, and calculation
-   examples. The linked derivation provides a starting point.
-4. Numerical IK equations, method explanation, and code snippets for IK,
-   trajectory planning, and velocity control.
-5. Scene dimensions, pickup/placement coordinates, orientation constraint,
-   results, and limitations.
-6. A screen-recorded demonstration video and its relationship to the reported
-   run. A working GUI session alone is not a submitted recording.
+The [technical report draft](report.md) now contains the DH derivation, frame
+diagram, forward/inverse kinematics, code excerpts, simulation results,
+limitations, a video recording checklist, and a final assignment checklist.
+Fill in group member information and record the GUI demonstration before
+submission. A working GUI session alone is not a submitted recording.
 
 The repository may be linked in the report. Retain the original task sheet and
 CAD assets as inputs; do not represent the two URDF exports in the CAD folder

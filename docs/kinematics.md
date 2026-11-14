@@ -58,7 +58,9 @@ The frames rotate with their links away from zero.
 Frame 3 is at the intersection of the extended elbow and wrist-roll axes;
 it is not at the URDF wrist-link origin. The three wrist axes intersect at
 (0.480, 0, 0.815). Frame 6 remains there, with the flange/tool included separately.
-A labeled diagram showing these frames is still needed for the report.
+The [labeled coordinate-frame diagram](coordinate_frames.svg) uses this table's
+origins and axes. It is schematic in projection; the out-of-plane joint axes
+are explicitly annotated beside it.
 
 ## 4. Derive the table
 
@@ -169,5 +171,5 @@ seeds each Cartesian sample to encourage a continuous branch. Optional initial
 restarts use a deterministic random generator. Acceptance requires residual
 norm below 1e-6; that norm combines translation and rotation components.
 This is numerical IK, not a derived analytic solution. It can fail to converge
-and it does not enforce collision constraints. The report should show these
-equations, explain the method, and include the relevant code snippet.
+and it does not enforce collision constraints. The method, equations, and code
+excerpt are collected in the [technical report](report.md).
