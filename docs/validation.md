@@ -19,6 +19,13 @@ fixed-joint grasp plugin, so these measurements do not demonstrate a
 force-based grasp. The fresh run was headless; no new screen recording was
 created.
 
+A second headless run exercised seeded near mode (`seed:=7`) at pickup center
+`(0.532383276, -0.217932066, 0.025) m`. It completed the same sequence and
+emitted `PICK AND PLACE VERIFIED`, with `8.84e-7 m` placement error and
+`2.19e-6 rad` final orientation error. This verifies the implemented seeded
+reachable-pickup path in Gazebo; it does not satisfy the task sheet's printed
+Box A coordinate.
+
 Gazebo also reported that its selected physics engine does not support mimic
 constraints. The simulated grasp plugin still confirmed attach and detach, and
 the task completed, but the run should not be used as evidence of realistic
@@ -80,9 +87,9 @@ center height, then allowed to settle before final verification.
 - Fresh headless far-pickup Gazebo task execution on 14 November 2026; see
   [revalidation results](#revalidation-on-14-november-2026).
 
-The near-mode route is covered by offline tests. A near-mode Gazebo task run,
-a completed submission report, a screen recording, and CAD equivalence have
-not been verified. No physical robot results are claimed.
+The seeded near-mode route has now been checked both offline and in Gazebo.
+A completed submission report, a screen recording, CAD equivalence, and
+physical robot results have not been verified or claimed.
 
 ## Limitations
 
