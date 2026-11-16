@@ -2,8 +2,8 @@
 
 The task uses the GP7 at **1:1 scale**, the supplied seven adaptive-gripper meshes,
 and correctly sized boxes. The gripper opens, closes around Box B, carries it
-upright, releases it on Box A and retracts. The default pickup is now near the
-maximum reachable ground-grasp distance.
+upright, releases it on Box A and retracts. The default pickup ground position is **(0.5, 0.5, 0) m**
+(`pickup_mode:=fixed`); the box centre is at z=0.025 m.
 
 ## Dimensions and placement
 
@@ -19,9 +19,9 @@ maximum reachable ground-grasp distance.
 | Box A | 300 × 300 × 200 mm |
 | Box B | 50 × 50 × 50 mm |
 | Robot base | (0, 0, 0) m |
-| Box A ground position | (0.55, 0.35, 0) m; model centre z=0.10 m |
-| Box B starting centre (default far mode) | Approximately (−0.06874, −0.92808, 0.025) m |
-| Final Box B centre | (0.55, 0.35, 0.225) m |
+| Box A ground position | (0.5, -0.5, 0) m; model centre z=0.10 m |
+| Box B starting ground position (default fixed mode) | (0.5, 0.5, 0) m; model centre z=0.025 m |
+| Final Box B centre | (0.5, -0.5, 0.225) m |
 
 The arm lengths, offsets, joint ranges and speed limits were checked against the
 [Yaskawa GP7 dimension drawing and specifications](https://www.yaskawa.eu.com/_downloads/download_d2303).
@@ -30,14 +30,15 @@ The manufacturer's reach describes the robot flange envelope, not an arbitrary
 end-effector's TCP envelope.
 
 **Approved change to the assignment scene:** Box A was moved from (1,1,0) to
-(0.55,0.35,0), because the original location is 1.414 m horizontally from the base
+(0.5,-0.5,0), because the original location is 1.414 m horizontally from the base
 and is outside the real GP7's flange reach with this downward gripper. Both boxes
 retain the assignment's specified dimensions. Mention the changed position in
-your report.
+your report. Box A now sits on the opposite side from the fixed pickup to
+provide more clearance around the pickup approach.
 
 ## Maximum-distance pickup
 
-`pickup_mode:=far` is the default. The launch computes the maximum horizontal
+`pickup_mode:=far` optionally enables the maximum-distance pickup. The launch computes the maximum horizontal
 radius for the box centre at z=0.025 m, subject to the actual URDF joint limits
 and the fixed downward grasp orientation. For this model the calculated boundary
 is **0.935621 m**. Box B is placed 5 mm inside it, at **0.930621 m** radius.

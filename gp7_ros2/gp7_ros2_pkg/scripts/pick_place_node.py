@@ -26,11 +26,11 @@ from gp7_motion.reach import carry_waypoints
 class PickPlace(Node):
     def __init__(self):
         super().__init__('gp7_pick_place')
-        self.declare_parameter('pickup_x', .55)
-        self.declare_parameter('pickup_y', -.20)
+        self.declare_parameter('pickup_x', .5)
+        self.declare_parameter('pickup_y', .5)
         self.declare_parameter('result_file', '')
-        self.declare_parameter('place_x', .55)
-        self.declare_parameter('place_y', .35)
+        self.declare_parameter('place_x', .5)
+        self.declare_parameter('place_y', -.5)
         self.destination = np.array([self.get_parameter('place_x').value,
                                      self.get_parameter('place_y').value, .225])
         self.pickup = np.array([self.get_parameter('pickup_x').value,
