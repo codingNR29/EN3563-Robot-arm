@@ -24,7 +24,10 @@ def setup(context):
     urdf = task_description(Path(share, 'urdf/gp7.urdf').read_text(), share,
                             str(Path(gazebo, 'config/ros2_controllers.yaml')))
     mode = LaunchConfiguration('pickup_mode').perform(context)
-    if mode == 'far':
+    if mode == 'fixed':
+        pickup = (.5, .5)
+        notice = 'Fixed pickup: ground position (0.5, 0.5, 0) m'
+    elif mode == 'far':
         point, maximum = farthest_ground_pickup(Kinematics(urdf))
         pickup = point[:2].tolist()
         notice = (f'Far pickup: ({pickup[0]:.4f}, {pickup[1]:.4f}) m; '
@@ -34,7 +37,7 @@ def setup(context):
         pickup = (rng.uniform(.50, .60), rng.uniform(-.23, -.15))
         notice = f'Near pickup: {pickup} m'
     else:
-        raise ValueError('pickup_mode must be far or near')
+        raise ValueError('pickup_mode must be fixed, far or near')
     world = ET.parse(Path(gazebo, 'worlds/pick_place.sdf'))
     world.find(".//model[@name='box_b']/pose").text = f'{pickup[0]} {pickup[1]} 0.025 0 0 0'
     fd, world_path = tempfile.mkstemp(prefix='gp7_pick_place_', suffix='.sdf')
@@ -56,7 +59,7 @@ def setup(context):
                                   '--controller-manager-timeout', '90'], output='screen')
     motion = Node(package='gp7_ros2_pkg', executable='pick_place_node', output='screen',
                   parameters=[{'use_sim_time': True, 'pickup_x': pickup[0], 'pickup_y': pickup[1],
-                               'place_x': .55, 'place_y': .35}],
+                               'place_x': .5, 'place_y': -.5}],
                   condition=IfCondition(LaunchConfiguration('run_task')))
     def after_controllers(event, _context):
         if event.returncode != 0:
@@ -70,8 +73,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('headless', default_value='false'),
         DeclareLaunchArgument('run_task', default_value='true'),
-        DeclareLaunchArgument('pickup_mode', default_value='far',
-                              description='far: near maximum ground reach; near: original seeded pickup'),
+        DeclareLaunchArgument('pickup_mode', default_value='fixed',
+                              description='fixed: (0.5, 0.5, 0) ground position; far: maximum ground reach; near: seeded pickup'),
         DeclareLaunchArgument('seed', default_value='7'),
         OpaqueFunction(function=setup),
     ])

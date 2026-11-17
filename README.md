@@ -1,4 +1,4 @@
-# GP7 pick-and-place simulation
+# Yaskawa Motoman GP7 Robot Arm — ROS 2 Project - EN3563
 
 This repository contains the original GP7 design assets and a ROS 2 / Gazebo
 simulation for the EN3563 robotics assignment. The simulation uses a six-axis
@@ -12,7 +12,7 @@ and a pick-and-place task with unchanged object orientation and smooth motion.
 It prints Box A at (1, 1, 0), outside this robot's reachable workspace from the
 origin. After the sheet was issued, the lecturer verbally clarified that a
 reachable pickup location may be used. Under that subsequent verbal
-clarification, the fixed Box A at (0.55, 0.35, 0) used here is acceptable. This
+clarification, the fixed Box A at (0.5, -0.5, 0) used here is acceptable. This
 clarification is not written in the assignment sheet; no written permission is
 claimed. Seeded near-mode positions are randomized Box B test pickup positions,
 not Box A placements. Submission also requires a report and demonstration
@@ -25,12 +25,17 @@ Positions are in metres, in the world/base frame.
 | --- | --- |
 | Robot base | (0, 0, 0) |
 | Box A dimensions | 0.30 × 0.30 × 0.20 |
-| Fixed Box A ground position | (0.55, 0.35, 0); model center z = 0.10 |
+| Fixed Box A ground position | (0.5, -0.5, 0); model center z = 0.10 |
 | Box B dimensions | 0.05 × 0.05 × 0.05 |
-| Default far-mode Box B pickup center | Approximately (-0.068740764, -0.928078308, 0.025) |
-| Placement target, Box B center | (0.55, 0.35, 0.225) |
+| Default fixed-mode Box B pickup center | (0.5, 0.5, 0.025) |
+| Placement target, Box B center | (0.5, -0.5, 0.225) |
 
-`pickup_mode:=far` optimizes the horizontal ground-grasp radius while keeping
+`pickup_mode:=fixed` is the default, with Box B at ground position (0.5, 0.5, 0).
+See the [functionality guide PDF](gp7_ros2/docs/GP7_Functionality_Guide.pdf),
+[editable guide](gp7_ros2/docs/GP7_Functionality_Guide.md), and
+[detailed task instructions](gp7_ros2/PICK_PLACE.md).
+
+`pickup_mode:=far` optionally optimizes the horizontal ground-grasp radius while keeping
 the tool pointing down. The calculated boundary is about 0.935621 m; the box
 starts 5 mm inside it at radius 0.930621 m. This is a model-specific orientation
 constraint, not the reach of every possible pose. The far pickup is not random.
@@ -39,6 +44,9 @@ constraint, not the reach of every possible pose. The far pickup is not random.
 and y in [-0.23, -0.15]. The seed makes this pickup repeatable and does not
 randomize the fixed Box A position. A successful Gazebo run in near mode is
 recorded in [validation](docs/validation.md).
+
+The historical validation records below use the earlier Box A position
+(0.55, 0.35, 0); they do not validate the updated scene.
 
 A GUI run of the far-pickup task succeeded on 11 October 2026. Robot spawning,
 all three active controllers, ROS communication, and Gazebo Python transport
@@ -92,7 +100,7 @@ PYTHONPATH="$PWD/gp7_ros2/gp7_ros2_pkg${PYTHONPATH:+:$PYTHONPATH}" \
   /usr/bin/python3 -m unittest discover -s gp7_ros2/gp7_ros2_pkg/test -v
 ```
 
-The tests check dimensions, home FK, near/far Cartesian routes and controller
+The tests check dimensions, home FK, fixed/far Cartesian routes and controller
 interpolation, gripper links, joint bounds, sampled velocity limits, and
 unreachable-target rejection. They do not run Gazebo.
 
@@ -129,7 +137,7 @@ installed, `ros2 control list_controllers` provides the same check.
 Close inspection with Ctrl+C before starting a fresh task scene. Run one of:
 
 ```bash
-# Complete task with the optimized far pickup
+# Complete task with the default fixed pickup
 ros2 launch gp7_ros2_pkg pick_place.launch.py run_task:=true headless:=false
 
 # Complete task with seeded random nearby pickup

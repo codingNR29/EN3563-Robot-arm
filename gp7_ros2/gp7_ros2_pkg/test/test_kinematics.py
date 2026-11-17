@@ -1,5 +1,4 @@
 """Offline regression checks for the assignment path, including interpolation."""
-import random
 import xml.etree.ElementTree as ET
 import unittest
 from pathlib import Path
@@ -25,10 +24,9 @@ class MotionTests(unittest.TestCase):
         np.testing.assert_allclose(self.kin.fk(np.zeros(6))[:3, 3], expected, atol=1e-7)
 
     def test_pick_place_paths_and_controller_interpolation(self):
-        rng = random.Random(7)
-        x, y = rng.uniform(.50, .60), rng.uniform(-.23, -.15)
+        x, y = .5, .5
         q = self.kin.ik(np.array([x, y, .40]), np.zeros(6), restart=True)
-        for target in [[x, y, .025], [x, y, .40], [.55, .35, .40], [.55, .35, .226], [.55, .35, .40]]:
+        for target in [[x, y, .025], [x, y, .40], [.5, -.5, .40], [.5, -.5, .226], [.5, -.5, .40]]:
             t, qs, v = self.kin.segment(q, target)
             self.assertTrue(np.all(qs >= self.kin.lower))
             self.assertTrue(np.all(qs <= self.kin.upper))
@@ -50,7 +48,7 @@ class MotionTests(unittest.TestCase):
         upper_bound = .040 + np.sqrt(arm_length**2-wrist_height**2) + np.hypot(.0009111, .0123)
         self.assertAlmostEqual(radius, upper_bound, places=6)
         self.assertAlmostEqual(np.linalg.norm(pickup[:2]), radius-.005, places=7)
-        above, waypoints = carry_waypoints(pickup, [.55, .35, .225])
+        above, waypoints = carry_waypoints(pickup, [.5, -.5, .225])
         self.assertEqual(above[2], .10)
         q = self.kin.ik(above, np.zeros(6), restart=True)
         for target, duration, _label in waypoints:
