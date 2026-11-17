@@ -1,5 +1,7 @@
 # Real-size GP7 with adaptive gripper
 
+> **Functionality guide:** [PDF with diagrams and code references](docs/GP7_Functionality_Guide.pdf) | [Editable Markdown](docs/GP7_Functionality_Guide.md). Covers inverse kinematics, trajectory planning and velocity handling.
+
 The task uses the GP7 at **1:1 scale**, the supplied seven adaptive-gripper meshes,
 and correctly sized boxes. The gripper opens, closes around Box B, carries it
 upright, releases it on Box A and retracts. The default pickup ground position is **(0.5, 0.5, 0) m**
